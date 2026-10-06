@@ -1,0 +1,16 @@
+{"case_id":"policy_pdf_001","query":"迟到不超过30分钟怎么计算","expected_title_keyword":"考勤管理制度","expected_pages":[4],"expected_content_keywords":["6.3.1","缺勤0.5小时"]}
+{"case_id":"policy_pdf_002","query":"迟到超过60分钟算什么","expected_title_keyword":"考勤管理制度","expected_pages":[4],"expected_content_keywords":["6.3.2","视为旷工"]}
+{"case_id":"policy_pdf_003","query":"忘记打卡后几天内可以补卡","expected_title_keyword":"考勤管理制度","expected_pages":[4],"expected_content_keywords":["3天内","补卡"]}
+{"case_id":"policy_pdf_004","query":"财务岗位每个月休息几天","expected_title_keyword":"考勤管理制度","expected_pages":[3],"expected_content_keywords":["财务","1天/周"],"expected_element_type":"table"}
+{"case_id":"policy_pdf_005","query":"8小时班次的上下班时间是什么","expected_title_keyword":"考勤管理制度","expected_pages":[4],"expected_content_keywords":["8H/天","08:30-11:30"],"expected_element_type":"table"}
+{"case_id":"policy_pdf_006","query":"自然月旷工4到6个班次怎么处罚","expected_title_keyword":"考勤管理制度","expected_pages":[5],"expected_content_keywords":["4个≤N＜6个","记小过1次"],"expected_element_type":"table"}
+{"case_id":"policy_pdf_007","query":"请假少于3天要提前多久申请","expected_title_keyword":"考勤管理制度","expected_pages":[6],"expected_content_keywords":["6.7.3","提前1天"]}
+{"case_id":"policy_pdf_008","query":"病假超过两天需要提供什么证明","expected_title_keyword":"考勤管理制度","expected_pages":[6],"expected_content_keywords":["6.9.5","诊疗凭据"]}
+{"case_id":"policy_pdf_009","query":"加班换调休最迟什么时候用完","expected_title_keyword":"考勤管理制度","expected_pages":[5],"expected_content_keywords":["6.6.4","次月使用完毕"]}
+{"case_id":"policy_pdf_010","query":"工伤假期间工资按什么标准计算","expected_title_keyword":"考勤管理制度","expected_pages":[7],"expected_content_keywords":["6.10.2","最低工资标准"]}
+{"case_id":"policy_pdf_011","query":"主动泄露公司机密是否触碰员工红线","expected_title_keyword":"员工红线管理制度","expected_pages":[3],"expected_content_keywords":["6.1.12","公司机密"]}
+{"case_id":"policy_pdf_012","query":"触碰红线造成损失一般赔偿多少","expected_title_keyword":"员工红线管理制度","expected_pages":[4],"expected_content_keywords":["6.2.2","1000~5000元"]}
+{"case_id":"policy_pdf_013","query":"上班时间能不能玩手机戴耳机","expected_title_keyword":"员工日常行为管理制度","expected_pages":[4],"expected_content_keywords":["6.3.3","玩手机"]}
+{"case_id":"policy_pdf_014","query":"女性进入车间可以穿多高的高跟鞋","expected_title_keyword":"员工日常行为管理制度","expected_pages":[5],"expected_content_keywords":["6.5.4","3cm"]}
+{"case_id":"policy_pdf_015","query":"拜访客户应该提前几分钟到","expected_title_keyword":"员工日常行为管理制度","expected_pages":[8],"expected_content_keywords":["6.14.2","5分钟"]}
+{"case_id":"policy_pdf_016","query":"公司握手礼仪建议握多久","expected_title_keyword":"员工日常行为管理制度","expected_pages":[7],"expected_content_keywords":["6.10.1","3秒"]}

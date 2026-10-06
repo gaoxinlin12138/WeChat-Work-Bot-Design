@@ -1,0 +1,24 @@
+[
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "category": "quality",
+    "file": "E:\\Python_work\\企业微信设计\\app\\admin\\static\\index.html",
+    "line": 0,
+    "snippet": "text color rgb(0, 0, 0) on strong \"知识运营中枢\" is outside DESIGN.md colors",
+    "advisory": true,
+    "ignoreValue": "rgb(0, 0, 0)"
+  },
+  {
+    "antipattern": "flat-type-hierarchy",
+    "name": "Flat type hierarchy",
+    "description": "Dominant heading and body roles are separated by less than 1.25× at every step, leaving the size hierarchy flat. Add at least one stronger size step.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "E:\\Python_work\\企业微信设计\\app\\admin\\static\\index.html",
+    "line": 0,
+    "snippet": "Role sizes: body 16px, h1 16px, h2 16px, h3 16px, h4 16px (largest adjacent step 1.00:1; target 1.25:1)"
+  }
+]

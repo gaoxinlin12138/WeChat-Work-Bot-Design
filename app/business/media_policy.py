@@ -1,0 +1,12 @@
+"""企业微信产品视频的安全发送策略。"""
+
+WECOM_VIDEO_SAFE_MAX_BYTES = 9_000_000
+WECOM_IMAGE_SAFE_MAX_BYTES = 10 * 1024 * 1024
+WECOM_IMAGE_SAFE_MAX_PIXELS = 25_000_000
+WECOM_VIDEO_OVERSIZE_MESSAGE = (
+    "视频超过企业微信安全发送上限（9MB），请压缩后重新上传"
+)
+WECOM_VIDEO_REJECTED_MESSAGE = (
+    "企业微信拒绝了这个视频：请使用9MB以内的MP4文件，"
+    "建议H.264/AAC、720×1280、30fps"
+)

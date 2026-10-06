@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f8fbff">
+  <title>知识运营中枢</title>
+  <link rel="stylesheet" href="/admin-static/style.css?v=2026092404">
+  <link rel="stylesheet" href="/admin-static/control-center.css?v=2026092405">
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M4.2 8.5c2.1-3.7 6.5-5.4 10.5-4.1 4 1.3 6.5 5.3 5.9 9.5M19.8 15.5c-2.1 3.7-6.5 5.4-10.5 4.1-4-1.3-6.5-5.3-5.9-9.5"/><path d="m3.5 6.6.7 1.9 2-.6M20.5 17.4l-.7-1.9-2 .6"/></symbol>
+    <symbol id="i-overview" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-3H4v3Zm10-13h6V4h-6v3Z"/></symbol>
+    <symbol id="i-documents" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6V3Z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></symbol>
+    <symbol id="i-scripts" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 4V5Z"/><path d="M9 9h6M9 12h4"/></symbol>
+    <symbol id="i-products" viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></symbol>
+    <symbol id="i-test" viewBox="0 0 24 24"><path d="M9 3v5l-5 9a2.2 2.2 0 0 0 1.9 3h12.2a2.2 2.2 0 0 0 1.9-3l-5-9V3"/><path d="M7 14h10M8 3h8"/></symbol>
+    <symbol id="i-audit" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5M8 11l2 2 4-5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M10 6H5v13h13v-5M13 5h6v6M19 5l-9 9"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol>
+  </svg>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark"><svg><use href="#i-orbit"></use></svg></span><div><strong>知识运营中枢</strong><small>WeCom Intelligence</small></div></div>
+    <div class="workspace-label">CONTROL CENTER</div>
+    <nav aria-label="主导航">
+      <button class="active" data-view="overview"><span class="nav-icon"><svg><use href="#i-overview"></use></svg></span><span>总览</span></button>
+      <div class="nav-group expanded" data-nav-group="documents"><button type="button" class="nav-parent" aria-expanded="true"><span class="nav-icon"><svg><use href="#i-documents"></use></svg></span><span>制度资料</span></button><div class="nav-submenu"><button type="button" data-view="documents" data-module="library"><span>制度文档</span></button><button type="button" data-view="documents" data-module="trash"><span>回收站</span><span id="nav-document-trash-count" class="nav-count"></span></button></div></div>
+      <div class="nav-group expanded" data-nav-group="scripts"><button type="button" class="nav-parent" aria-expanded="true"><span class="nav-icon"><svg><use href="#i-scripts"></use></svg></span><span>客户话术</span></button><div class="nav-submenu"><button type="button" data-view="scripts" data-module="library"><span>话术库</span></button><button type="button" data-view="scripts" data-module="trash"><span>回收站</span><span id="nav-script-trash-count" class="nav-count"></span></button></div></div>
+      <div class="nav-group expanded" data-nav-group="catalog"><button type="button" class="nav-parent" aria-expanded="true"><span class="nav-icon"><svg><use href="#i-products"></use></svg></span><span>产品资料</span></button><div class="nav-submenu"><button type="button" data-view="catalog" data-module="library"><span>产品与媒体库</span></button><button type="button" data-view="catalog" data-module="trash"><span>回收站</span><span id="nav-trash-count" class="nav-count"></span></button></div></div>
+      <button data-view="testing"><span class="nav-icon"><svg><use href="#i-test"></use></svg></span><span>问答测试</span></button>
+      <button data-view="audits"><span class="nav-icon"><svg><use href="#i-audit"></use></svg></span><span>识别记录</span></button>
+    </nav>
+    <div class="sidebar-foot"><div id="rail-status" class="rail-status is-checking"><i></i><div><b>服务检查中</b><small>API · Redis · 向量库</small></div></div><a class="docs" href="/docs" target="_blank" rel="noopener noreferrer">开发接口文档 <svg class="inline-icon" aria-hidden="true"><use href="#i-external"></use></svg></a><small class="build-mark">LOCAL WORKSPACE · 2026</small></div>
+  </aside>
+  <main class="app-shell">
+    <header class="topbar"><div class="crumb"><span>运营工作台</span><i>/</i><strong id="page-title">工作总览</strong></div><div class="top-actions"><span class="sync-time" id="sync-time">数据同步中…</span><div id="health" class="health"><i></i>检查服务中…</div></div></header>
+    <dialog id="toast" class="toast-layer" popover="manual" aria-live="polite" aria-atomic="false"></dialog>
+
+    <section id="overview" class="view active">
+      <div class="overview-intro"><div><h1>知识运行态势</h1><p>检查正在生效的业务资料、服务链路和待处理内容。</p></div><div id="overview-live" class="overview-live is-checking"><i></i><span>生产链路检查中</span><small>正在确认 API 与依赖服务</small></div></div>
+      <div class="metric-grid"><article class="metric metric-ink"><span class="metric-label">制度资料</span><strong id="stat-docs">0</strong><small>份当前知识</small></article><article class="metric metric-sand"><span class="metric-label">已发布话术</span><strong id="stat-scripts">0</strong><small>条可直接调用</small></article><article class="metric metric-mint"><span class="metric-label">已发布产品</span><strong id="stat-models">0</strong><small>个产品档案</small></article><article class="metric metric-coral"><span class="metric-label">媒体资产</span><strong id="stat-media">0</strong><small>项图片与视频</small></article></div>
+      <div class="overview-workspace">
+        <article class="panel mission-panel"><div class="panel-heading"><div><h2>运营任务入口</h2><p class="panel-subtitle">从资料入库到回答验收，按当前工作继续。</p></div><span id="ops-status" class="status-code">OPS / CHECK</span></div><div class="mission-list"><button type="button" data-jump="documents"><span><b>维护制度资料</b><small>上传、预览并发布最新制度</small></span><svg><use href="#i-arrow"></use></svg></button><button type="button" data-jump="catalog"><span><b>更新产品档案</b><small>管理字段、价格、配件与媒体</small></span><svg><use href="#i-arrow"></use></svg></button><button type="button" data-jump="testing"><span><b>执行问答验收</b><small>使用员工真实说法验证路由与回答</small></span><svg><use href="#i-arrow"></use></svg></button><button type="button" data-jump="audits"><span><b>复核识别轨迹</b><small>检查完整对话并纠正误判</small></span><svg><use href="#i-arrow"></use></svg></button></div></article>
+        <aside class="panel signal-panel"><div class="panel-heading"><div><h2>回答链路</h2><p class="panel-subtitle">每次员工提问都经过同一条受控路径。</p></div></div><ol class="signal-path"><li><span>01</span><div><b>接收</b><small>企业微信消息</small></div></li><li><span>02</span><div><b>识别</b><small>规则与语义路由</small></div></li><li><span>03</span><div><b>检索</b><small>可信业务资料</small></div></li><li><span>04</span><div><b>交付</b><small>回答与媒体</small></div></li></ol><p class="signal-note"><i></i>无可靠资料时不生成业务结论</p></aside>
+      </div>
+    </section>
+
+    <section id="documents" class="view">
+      <div class="view-intro"><div><h1>制度资料</h1><p>新增制度先检查再发布；内容更新请在原制度上替换文件。</p></div></div>
+      <div class="split-layout document-upload-layout">
+        <form id="document-form" class="panel form-panel document-upload-form">
+          <div class="form-title"><h2>新增一份制度</h2><p>只在第一次录入制度时使用；更新已有制度请点击“替换文件”。</p></div>
+          <div class="document-field-row">
+            <label>资料标题<input name="title" required placeholder="选择文件后自动填写"></label>
+            <label>资料分类<input name="category" value="公司制度" required></label>
+          </div>
+          <div class="document-upload-row">
+            <label class="drop document-drop"><span class="drop-icon"><svg aria-hidden="true"><use href="#i-upload"></use></svg></span><span class="document-drop-copy"><b>选择制度文件</b><small>PDF / TXT / MD · 最大 50MB</small></span><input name="file" type="file" accept=".pdf,.txt,.md" required><span id="file-name">点击选择文件</span></label>
+            <button type="submit" class="primary-action document-upload-action">上传并等待检查</button>
+          </div>
+          <p class="form-footnote">上传后请先预览，确认无误再发布；更新已有制度请在下方点击“替换文件”。</p>
+        </form>
+      </div>
+      <div class="panel table-panel"><div class="panel-heading"><div><h2>制度文档</h2><p class="panel-subtitle">“使用中”表示机器人正在引用；“待发布”表示还需要检查确认。</p></div><div class="toolbar-actions"><button type="button" class="danger quiet-action bulk-delete-action" id="bulk-delete-documents" onclick="bulkDeleteDocuments()" disabled>批量删除</button><button class="quiet-action" onclick="loadDocuments()">刷新</button></div></div><div id="documents-table" class="table-wrap"></div></div>
+    </section>
+
+    <section id="scripts" class="view">
+      <div class="view-intro"><div><span class="section-kicker">知识库 / 客户沟通</span><h1>客户话术</h1><p>沉淀真实客户问答，生成可发送、可复用的回复表达。</p></div><div class="view-meta"><span class="meta-label">已发布话术</span><b id="script-view-count">—</b></div></div>
+      <div id="script-library-module" data-script-module="library">
+      <section class="panel script-entry-panel" aria-labelledby="script-entry-title">
+        <div class="script-entry-head">
+          <div><h2 id="script-entry-title">新增客户问答案例</h2><p>选择一种录入方式，保存后统一进入下方案例库检查和发布。</p></div>
+          <div class="script-entry-tabs" role="tablist" aria-label="话术录入方式">
+            <button type="button" role="tab" aria-selected="true" aria-controls="script-upload-form" data-script-mode="batch">Excel 批量导入</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="script-form" data-script-mode="manual">手工新增一条</button>
+          </div>
+        </div>
+        <form id="script-upload-form" class="script-method-pane script-batch-pane" role="tabpanel" data-script-pane="batch">
+          <div class="script-method-copy"><h3>批量导入 Excel</h3><p>表格只需填写“客户当时询问什么”和“员工实际回复”，其他信息由系统识别。</p></div>
+          <div class="script-upload-row">
+            <label class="drop script-drop"><span class="drop-icon"><svg aria-hidden="true"><use href="#i-upload"></use></svg></span><span class="script-drop-copy"><b>选择 Excel 文件</b><small>XLSX · 最大 20MB · 每次最多 100 条</small></span><input name="file" type="file" accept=".xlsx" required><span id="script-file-name">点击选择文件</span></label>
+            <button type="submit" class="primary-action script-submit-action">解析并保存草稿</button>
+          </div>
+        </form>
+        <form id="script-form" class="script-method-pane script-manual-pane" role="tabpanel" data-script-pane="manual" hidden>
+          <div class="script-method-copy"><h3>手工新增一条</h3><p>直接记录一次真实沟通，尽量保留员工平时会使用的表达。</p></div>
+          <div class="script-manual-fields">
+            <label>客户当时询问什么<textarea name="customer_question" rows="5" required placeholder="粘贴客户原话或概括客户问题"></textarea></label>
+            <label>员工实际回复<textarea name="content" rows="5" required placeholder="输入员工当时实际发给客户的回复"></textarea></label>
+          </div>
+          <div class="script-manual-actions"><span>保存后默认为草稿，不会立即用于员工问答。</span><button type="submit" class="primary-action script-submit-action">保存为草稿</button></div>
+        </form>
+      </section>
+      <div class="panel table-panel"><div class="panel-heading"><div><span class="section-kicker">案例库</span><h2>客户问答案例</h2></div><div class="toolbar-actions"><button type="button" class="danger quiet-action bulk-delete-action" id="bulk-delete-scripts" onclick="bulkDeleteScripts()" disabled>批量删除</button><button class="quiet-action" onclick="loadScripts()">刷新列表</button></div></div><div class="toolbar clean-toolbar"><input id="script-filter" placeholder="搜索问题、回复或场景"><select id="script-status-filter"><option value="">全部状态</option><option value="pending">待发布</option><option value="active">使用中</option></select></div><div class="library-table-shell script-library-table"><div class="library-table-head"><label class="selection-column library-head-select"><input id="select-all-scripts" type="checkbox" aria-label="全选当前话术" onchange="toggleAllScripts(this.checked)"><span class="sr-only">全选当前话术</span></label><span>话术内容</span><span>状态</span><span>操作</span></div><div id="scripts-list" class="cards library-table-body"></div></div></div>
+      </div>
+      <section id="script-trash-module" class="panel table-panel module-hidden" data-script-module="trash"><div class="panel-heading"><div><h2>话术回收站</h2><p class="panel-subtitle">这里的话术不会被机器人使用；恢复后会回到删除前的状态。</p></div><div class="trash-retention"><b id="script-trash-count">0</b><span>条待处理</span></div></div><div class="trash-notice">回收站保留 7 天；到期后会同时永久删除话术内容、历史修改稿和检索向量。草稿超过 7 天未操作会自动进入回收站。</div><div id="script-trash-list" class="trash-list"></div></section>
+    </section>
+
+    <section id="catalog" class="view">
+      <div class="view-intro"><div><span class="section-kicker">知识库 / 产品档案</span><h1>产品资料</h1><p>字段与“花洒产品档案”Excel 完全一致，导入后可逐条校对、关联媒体并发布。</p></div><div class="view-meta"><span class="meta-label">价格口径</span><b>不含税、不含运费</b></div></div>
+      <div class="catalog-page-module" data-catalog-module="library">
+        <section class="panel product-create-panel"><div class="panel-heading"><div><h2>新增产品</h2><p class="panel-subtitle">选择批量导入或单条建档，保存后都先进入产品资料库统一校对。</p></div></div><div class="product-create-methods"><form id="product-import-form" class="product-create-method"><div><b>Excel 批量导入</b><p>按 35 列模板一次导入多条产品档案，导入结果保存为草稿。</p></div><label class="compact-file-picker"><input name="file" type="file" accept=".xlsx" required><span id="product-file-name">选择 .xlsx 文件</span></label><button type="submit" class="primary-action">导入为草稿</button></form><div class="product-create-method"><div><b>单条建档</b><p>逐项填写产品、配件和媒体信息，适合新增或精细维护单个产品。</p></div><button type="button" class="primary-action" id="new-product">开始单条建档</button></div></div><div id="product-import-result" class="quality-report"></div></section>
+        <section class="panel catalog-library"><div class="panel-heading catalog-library-heading"><div><span class="section-kicker">产品清单</span><h2>产品与媒体库</h2><p class="panel-subtitle">在这里查看产品，并统一维护字段、媒体和配件。</p></div><div class="toolbar-actions"><button type="button" class="danger quiet-action bulk-delete-action" id="bulk-delete-products" onclick="bulkDeleteCatalog()" disabled>批量删除</button><button type="button" class="quiet-action" onclick="loadCatalog()">刷新列表</button></div></div><div class="toolbar clean-toolbar catalog-filter-toolbar"><input id="catalog-filter" type="search" placeholder="搜索型号、系列、颜色、材质或款式"><select id="catalog-status-filter"><option value="">全部状态</option><option value="draft">草稿</option><option value="active">已发布</option></select></div><div class="library-table-shell product-library-table"><div class="library-table-head"><label class="selection-column library-head-select"><input id="select-all-products" type="checkbox" aria-label="全选当前产品" onchange="toggleAllCatalog(this.checked)"><span class="sr-only">全选当前产品</span></label><span>产品信息</span><span>价格</span><span>资料</span><span>操作</span></div><div id="catalog-list" class="catalog-list library-table-body"></div></div></section>
+      </div>
+      <div class="catalog-page-module" data-catalog-module="trash"><section class="panel catalog-library trash-library"><div class="panel-heading"><div><span class="section-kicker">安全删除</span><h2>产品回收站</h2><p class="panel-subtitle">回收站保留 7 天；到期后产品、检索数据和不再被引用的媒体文件会一起永久删除。</p></div><div class="trash-retention"><b id="trash-count">0</b><span>个待处理</span></div></div><div class="trash-notice">产品草稿超过 7 天未操作会自动进入回收站。单独移除或替换图片、视频会立即永久删除原文件。</div><div id="trash-list" class="trash-list"></div></section></div>
+    </section>
+
+    <section id="testing" class="view"><div class="view-intro"><div><span class="section-kicker">质量工具 / 模拟员工提问</span><h1>问答测试</h1><p>用真实说法测试意图识别、数据源和最终回答。</p></div><div class="view-meta"><span class="meta-label">建议</span><b>先测模糊问题</b></div></div><div class="test-layout"><div class="panel test-panel"><div class="test-header"><div><span class="section-kicker">对话沙盒</span><h2>像员工一样提问</h2></div><span class="sandbox-chip">LOCAL</span></div><div class="query"><label class="sr-only" for="test-query">输入测试问题</label><input id="test-query" aria-label="输入测试问题" placeholder="例如：客户投诉 0689 质量问题，我怎么回复？"><button id="test-button" class="primary-action">发送测试 <svg class="inline-icon" aria-hidden="true"><use href="#i-external"></use></svg></button></div><div class="test-suggestions"><span>可以试试</span><button type="button" data-test-query="公司的打卡规定是什么？">查制度</button><button type="button" data-test-query="0689有哪些配件？">查产品</button><button type="button" data-test-query="客户嫌价格高怎么回复？">写话术</button></div><div id="test-result" class="answer empty">回答和意图识别结果将显示在这里</div></div><aside class="panel test-guide"><span class="section-kicker">怎么看结果</span><h3>一条好回答应当具备</h3><ul><li><b>意图准确</b><span>路由到正确业务模块</span></li><li><b>依据明确</b><span>制度带条款和页码</span></li><li><b>表达可用</b><span>员工可以直接继续处理</span></li></ul><button data-jump="audits" class="text-action">查看识别记录 <svg class="inline-icon" aria-hidden="true"><use href="#i-external"></use></svg></button></aside></div></section>
+
+    <section id="audits" class="view"><div class="view-intro"><div><span class="section-kicker">质量闭环 / 路由观察</span><h1>识别记录</h1><p>保存员工原话、理解结果和回答摘要，方便管理员核对并纠正误判。</p></div><div class="view-meta"><span class="meta-label">记录范围</span><b>仅管理员可查看完整对话</b></div></div><div class="panel table-panel"><div class="panel-heading"><div><span class="section-kicker">最近记录</span><h2>意图识别轨迹</h2></div><div class="toolbar-actions audit-toolbar"><select id="audit-intent-filter"><option value="">全部意图</option><option value="policy_query">制度查询</option><option value="product_query">产品查询</option><option value="product_media_query">产品媒体</option><option value="reply_script_query">回复话术</option><option value="general_knowledge">通用资料</option><option value="conversation">日常对话</option></select><select id="audit-corrected-filter"><option value="">全部记录</option><option value="false">待复核</option><option value="true">已纠错</option></select><button class="quiet-action" onclick="loadAudits()">应用筛选</button><button class="quiet-action" onclick="loadAudits()">刷新</button></div></div><div id="audits-table" class="table-wrap"><p class="hint">切换到本页面后加载记录。</p></div></div></section>
+  </main>
+  <dialog id="product-editor" class="product-editor-drawer" aria-labelledby="product-form-title">
+    <form id="product-form" class="catalog-form product-editor-form">
+      <header class="product-editor-head"><div class="form-title"><span class="section-kicker">产品档案</span><h2 id="product-form-title">新建产品</h2><p>型号允许重复。颜色、材质等参数请按实际产品填写。</p></div><button type="button" class="icon" id="close-product-editor" aria-label="关闭产品编辑"><svg aria-hidden="true"><use href="#i-close"></use></svg></button></header>
+      <div class="product-editor-scroll"><div class="catalog-details">
+        <section class="form-section"><div class="section-heading"><span>01</span><div><h3>产品字段与参数</h3><p>对应产品档案 A:S 列</p></div></div>
+          <div class="field-grid"><label>序号<input name="sequence_number" type="number" min="0"></label><label>产品型号 <em>必填</em><input name="model" required maxlength="200"></label><label>系列<input name="series" maxlength="200"></label><label>材质<input name="material" maxlength="200"></label><label>档位<input name="spray_modes" maxlength="100"></label><label>颜色<input name="color" maxlength="200"></label><label>特殊功能<input name="special_function" maxlength="2000"></label><label>出货地<input name="shipping_origin" maxlength="200"></label><label>套装价（元）<input name="set_price" type="number" min="0" step="0.01"></label><label>主体价（元）<input name="body_price" type="number" min="0" step="0.01"></label><label>成本价（元）<input name="cost_price" type="number" min="0" step="0.01"></label><label>供应商<input name="supplier" maxlength="300"></label><label>主体供应商<input name="body_supplier" maxlength="300"></label></div>
+          <label>产品描述<textarea name="product_description" rows="3" maxlength="5000"></textarea></label><label>备注<textarea name="notes" rows="3" maxlength="5000"></textarea></label>
+        </section>
+        <section class="form-section"><div class="section-heading"><span>02</span><div><h3>媒体资产</h3><p>选择文件后立即预览，保存产品时上传到媒体库。</p></div></div>
+          <div class="media-upload-block"><div class="media-upload-heading"><div><h4>实际媒体文件</h4><p>图片支持预览，实物图可一次选择多个文件。</p></div><span class="media-upload-note">图片 / 视频</span></div><div class="media-grid"><label class="upload-field"><b>主图</b><small>单个图片文件</small><input name="main_image_upload" type="file" accept="image/*"><span class="upload-preview" data-upload-preview="main_image_upload">尚未选择文件</span></label><label class="upload-field"><b>实物图</b><small>可多选图片文件</small><input name="gallery_image_upload" type="file" accept="image/*" multiple><span class="upload-preview" data-upload-preview="gallery_image_upload">尚未选择文件</span></label><label class="upload-field"><b>配置图</b><small>单个图片文件</small><input name="configuration_image_upload" type="file" accept="image/*"><span class="upload-preview" data-upload-preview="configuration_image_upload">尚未选择文件</span></label><label class="upload-field"><b>产品视频</b><small>MP4 · 不超过9MB</small><input name="product_video_upload" type="file" accept=".mp4,video/mp4"><span class="upload-preview" data-upload-preview="product_video_upload">尚未选择文件</span></label></div><div id="product-media-list" class="existing-media"></div></div>
+        </section>
+        <section class="form-section"><div class="section-heading"><span>03</span><div><h3>配件采购明细</h3><p>每个配件一行；供应商与采购单价不会自动替代成本价。</p></div></div><div class="component-table-wrap"><table class="component-editor"><thead><tr><th>配件</th><th>供应商</th><th>采购单价（元）</th></tr></thead><tbody id="component-editor-body"></tbody></table></div><div class="component-total">配件采购小计 <strong id="component-total">—</strong> <span>仅作参考</span></div></section>
+      </div></div>
+      <footer class="product-editor-actions"><button type="button" class="quiet-action" id="clear-product-form">清空字段</button><span id="product-save-state" class="save-state" role="status" aria-live="polite">未保存更改</span><div><button type="button" class="quiet-action" id="cancel-product-editor">取消</button><button type="submit" class="quiet-action">保存草稿</button><button type="button" class="primary-action" id="publish-product">保存并发布</button></div></footer>
+    </form>
+  </dialog>
+  <dialog id="modal"><div class="modal-head"><h2 id="modal-title">资料详情</h2><button class="icon" onclick="closeModal()" aria-label="关闭"><svg aria-hidden="true"><use href="#i-close"></use></svg></button></div><div id="modal-body"></div></dialog>
+  <dialog id="confirm-modal" class="confirm-modal"><div class="modal-head"><h2 id="confirm-title">请确认操作</h2><button class="icon" onclick="closeConfirmModal()" aria-label="关闭"><svg aria-hidden="true"><use href="#i-close"></use></svg></button></div><div class="confirm-body"><p id="confirm-message"></p><label id="confirm-code-wrap" class="confirm-code-wrap">确认内容<input id="confirm-code" autocomplete="off" placeholder="请输入确认内容"></label><div class="confirm-actions"><button type="button" class="quiet-action" onclick="closeConfirmModal()">取消</button><button type="button" class="primary-action" id="confirm-submit">确定</button></div></div></dialog>
+     <script src="/admin-static/app.js?v=2026092402"></script>
+     <script src="/admin-static/product-admin.js?v=2026092402"></script>
+</body>
+</html>
+

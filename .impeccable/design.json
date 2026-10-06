@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-22T14:29:05.8361455+08:00",
+  "title": "Design System: 知识运营中枢",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "控制台墨色", "canonical": "#0b2031", "tonalRamp": ["oklch(15% 0.035 240)", "oklch(26% 0.035 240)", "oklch(38% 0.035 240)", "oklch(50% 0.035 240)", "oklch(62% 0.035 240)", "oklch(74% 0.035 240)", "oklch(86% 0.035 240)", "oklch(95% 0.035 240)"] },
+      "ink-soft": { "role": "neutral", "displayName": "柔化墨色", "canonical": "#3f596b", "tonalRamp": ["oklch(15% 0.03 240)", "oklch(26% 0.03 240)", "oklch(38% 0.03 240)", "oklch(50% 0.03 240)", "oklch(62% 0.03 240)", "oklch(74% 0.03 240)", "oklch(86% 0.03 240)", "oklch(95% 0.03 240)"] },
+      "rail": { "role": "neutral", "displayName": "深海轨道", "canonical": "#071927", "tonalRamp": ["oklch(15% 0.03 242)", "oklch(26% 0.03 242)", "oklch(38% 0.03 242)", "oklch(50% 0.03 242)", "oklch(62% 0.03 242)", "oklch(74% 0.03 242)", "oklch(86% 0.03 242)", "oklch(95% 0.03 242)"] },
+      "rail-soft": { "role": "neutral", "displayName": "轨道次层", "canonical": "#0d2739", "tonalRamp": ["oklch(15% 0.04 240)", "oklch(26% 0.04 240)", "oklch(38% 0.04 240)", "oklch(50% 0.04 240)", "oklch(62% 0.04 240)", "oklch(74% 0.04 240)", "oklch(86% 0.04 240)", "oklch(95% 0.04 240)"] },
+      "canvas": { "role": "neutral", "displayName": "冷白画布", "canonical": "#f3f7fa", "tonalRamp": ["oklch(15% 0.008 235)", "oklch(26% 0.008 235)", "oklch(38% 0.008 235)", "oklch(50% 0.008 235)", "oklch(62% 0.008 235)", "oklch(74% 0.008 235)", "oklch(86% 0.008 235)", "oklch(95% 0.008 235)"] },
+      "surface": { "role": "neutral", "displayName": "纯白表面", "canonical": "#ffffff", "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(62% 0 0)", "oklch(74% 0 0)", "oklch(86% 0 0)", "oklch(95% 0 0)"] },
+      "border": { "role": "neutral", "displayName": "蓝灰边界", "canonical": "#d9e4eb", "tonalRamp": ["oklch(15% 0.012 235)", "oklch(26% 0.012 235)", "oklch(38% 0.012 235)", "oklch(50% 0.012 235)", "oklch(62% 0.012 235)", "oklch(74% 0.012 235)", "oklch(86% 0.012 235)", "oklch(95% 0.012 235)"] },
+      "border-strong": { "role": "neutral", "displayName": "强调边界", "canonical": "#becdd7", "tonalRamp": ["oklch(15% 0.016 235)", "oklch(26% 0.016 235)", "oklch(38% 0.016 235)", "oklch(50% 0.016 235)", "oklch(62% 0.016 235)", "oklch(74% 0.016 235)", "oklch(86% 0.016 235)", "oklch(95% 0.016 235)"] },
+      "muted": { "role": "neutral", "displayName": "静音蓝灰", "canonical": "#637b8b", "tonalRamp": ["oklch(15% 0.025 235)", "oklch(26% 0.025 235)", "oklch(38% 0.025 235)", "oklch(50% 0.025 235)", "oklch(62% 0.025 235)", "oklch(74% 0.025 235)", "oklch(86% 0.025 235)", "oklch(95% 0.025 235)"] },
+      "action": { "role": "primary", "displayName": "行动蓝", "canonical": "#176bce", "tonalRamp": ["oklch(15% 0.16 250)", "oklch(26% 0.16 250)", "oklch(38% 0.16 250)", "oklch(50% 0.16 250)", "oklch(62% 0.16 250)", "oklch(74% 0.16 250)", "oklch(86% 0.16 250)", "oklch(95% 0.16 250)"] },
+      "action-deep": { "role": "primary", "displayName": "深行动蓝", "canonical": "#0b55ad", "tonalRamp": ["oklch(15% 0.15 250)", "oklch(26% 0.15 250)", "oklch(38% 0.15 250)", "oklch(50% 0.15 250)", "oklch(62% 0.15 250)", "oklch(74% 0.15 250)", "oklch(86% 0.15 250)", "oklch(95% 0.15 250)"] },
+      "action-hover": { "role": "primary", "displayName": "行动悬停蓝", "canonical": "#0b58b4", "tonalRamp": ["oklch(15% 0.155 250)", "oklch(26% 0.155 250)", "oklch(38% 0.155 250)", "oklch(50% 0.155 250)", "oklch(62% 0.155 250)", "oklch(74% 0.155 250)", "oklch(86% 0.155 250)", "oklch(95% 0.155 250)"] },
+      "signal": { "role": "secondary", "displayName": "信号青绿", "canonical": "#0b8d91", "tonalRamp": ["oklch(15% 0.09 194)", "oklch(26% 0.09 194)", "oklch(38% 0.09 194)", "oklch(50% 0.09 194)", "oklch(62% 0.09 194)", "oklch(74% 0.09 194)", "oklch(86% 0.09 194)", "oklch(95% 0.09 194)"] },
+      "signal-pale": { "role": "secondary", "displayName": "浅信号青绿", "canonical": "#e6f5f3", "tonalRamp": ["oklch(15% 0.025 194)", "oklch(26% 0.025 194)", "oklch(38% 0.025 194)", "oklch(50% 0.025 194)", "oklch(62% 0.025 194)", "oklch(74% 0.025 194)", "oklch(86% 0.025 194)", "oklch(95% 0.025 194)"] },
+      "warning": { "role": "secondary", "displayName": "警示琥珀", "canonical": "#b87916", "tonalRamp": ["oklch(15% 0.11 75)", "oklch(26% 0.11 75)", "oklch(38% 0.11 75)", "oklch(50% 0.11 75)", "oklch(62% 0.11 75)", "oklch(74% 0.11 75)", "oklch(86% 0.11 75)", "oklch(95% 0.11 75)"] },
+      "warning-pale": { "role": "secondary", "displayName": "浅警示琥珀", "canonical": "#fbf2df", "tonalRamp": ["oklch(15% 0.025 75)", "oklch(26% 0.025 75)", "oklch(38% 0.025 75)", "oklch(50% 0.025 75)", "oklch(62% 0.025 75)", "oklch(74% 0.025 75)", "oklch(86% 0.025 75)", "oklch(95% 0.025 75)"] },
+      "danger": { "role": "tertiary", "displayName": "风险深红", "canonical": "#c13c4b", "tonalRamp": ["oklch(15% 0.14 20)", "oklch(26% 0.14 20)", "oklch(38% 0.14 20)", "oklch(50% 0.14 20)", "oklch(62% 0.14 20)", "oklch(74% 0.14 20)", "oklch(86% 0.14 20)", "oklch(95% 0.14 20)"] },
+      "danger-pale": { "role": "tertiary", "displayName": "浅风险红", "canonical": "#fbecef", "tonalRamp": ["oklch(15% 0.025 20)", "oklch(26% 0.025 20)", "oklch(38% 0.025 20)", "oklch(50% 0.025 20)", "oklch(62% 0.025 20)", "oklch(74% 0.025 20)", "oklch(86% 0.025 20)", "oklch(95% 0.025 20)"] },
+      "focus": { "role": "tertiary", "displayName": "焦点青", "canonical": "#42b9c2", "tonalRamp": ["oklch(15% 0.1 194)", "oklch(26% 0.1 194)", "oklch(38% 0.1 194)", "oklch(50% 0.1 194)", "oklch(62% 0.1 194)", "oklch(74% 0.1 194)", "oklch(86% 0.1 194)", "oklch(95% 0.1 194)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "页级展示", "purpose": "页标题；使用自托管 Noto Sans SC Display。" },
+      "headline": { "displayName": "面板标题", "purpose": "面板标题和表单段标题。" },
+      "body": { "displayName": "控制台正文", "purpose": "正文、说明、表单与连续阅读。" },
+      "label": { "displayName": "操作标签", "purpose": "按钮、字段标签和指标标题。" },
+      "micro-label": { "displayName": "微型元数据", "purpose": "短状态代码、元数据和控制台标记。" },
+      "numeric-display": { "displayName": "台账数字", "purpose": "使用等宽数字特性的关键指标。" }
+    },
+    "shadows": [
+      { "name": "action-lift", "value": "0 7px 18px rgba(23, 107, 206, 0.2)", "purpose": "仅用于主要按钮悬停。" },
+      { "name": "selected-tab", "value": "0 3px 10px rgba(28, 66, 90, 0.1)", "purpose": "仅用于当前录入方式标签。" },
+      { "name": "transient-overlay", "value": "0 18px 50px rgba(17, 43, 62, 0.16)", "purpose": "Toast 等短暂浮层。" },
+      { "name": "modal-depth", "value": "0 28px 90px rgba(7, 25, 39, 0.32)", "purpose": "模态对话框。" }
+    ],
+    "motion": [
+      { "name": "state-standard", "value": "160ms ease", "purpose": "按钮、导航、边界与颜色状态过渡。" },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "prefers-reduced-motion 下把过渡压缩到近乎即时。" }
+    ],
+    "breakpoints": [
+      { "name": "rail-compact", "value": "1180px" },
+      { "name": "rail-to-strip", "value": "860px" },
+      { "name": "single-column", "value": "620px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "用于保存、发布、上传和发送测试等当前流程的主动作。",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">保存草稿</button>",
+      "css": ".ds-btn-primary { min-height: 40px; padding: 9px 14px; border: 1px solid #176bce; border-radius: 9px; background: #176bce; color: #fff; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; font-size: 11px; font-weight: 750; cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease; } .ds-btn-primary:hover { background: #0b58b4; box-shadow: 0 7px 18px rgba(23,107,206,.2); } .ds-btn-primary:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; } .ds-btn-primary:active { background: #0b55ad; box-shadow: none; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "用于刷新、取消和清空等次级操作。",
+      "html": "<button class=\"ds-btn-quiet\" type=\"button\">刷新列表</button>",
+      "css": ".ds-btn-quiet { min-height: 40px; padding: 9px 14px; border: 1px solid #ccd9e1; border-radius: 9px; background: #fff; color: #23495f; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; font-size: 11px; font-weight: 750; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; } .ds-btn-quiet:hover { border-color: #9ab5c4; background: #f2f7fa; } .ds-btn-quiet:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; } .ds-btn-quiet:active { background: #e8f0f4; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "用于搜索、标题与短文本录入的标准字段。",
+      "html": "<label class=\"ds-field\">资料标题<input type=\"text\" placeholder=\"选择文件后自动填写\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: #29495c; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; font-size: 11px; font-weight: 700; } .ds-field input { min-height: 42px; padding: 10px 12px; border: 1px solid #ccd9e1; border-radius: 9px; background: #fff; color: #0b2031; font: inherit; font-size: 12px; font-weight: 400; caret-color: #176bce; transition: border-color 160ms ease, box-shadow 160ms ease; } .ds-field input::placeholder { color: #8195a2; opacity: 1; } .ds-field input:hover { border-color: #9ab5c4; } .ds-field input:focus { border-color: #2b91c5; outline: 2px solid #42b9c2; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(43,145,197,.12); }"
+    },
+    {
+      "name": "Active Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "深色轨道中带线性 SVG 和左侧信号线的当前任务项。",
+      "html": "<button class=\"ds-nav-item ds-is-active\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 13h6V4H4v9Zm10 7h6v-9h-6v9ZM4 20h6v-3H4v3Zm10-13h6V4h-6v3Z\"/></svg><span>总览</span></button>",
+      "css": ".ds-nav-item { position: relative; display: flex; align-items: center; gap: 11px; width: 235px; min-height: 42px; padding: 9px 11px; border: 1px solid transparent; border-radius: 9px; background: #071927; color: #a9becc; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; font-size: 13px; cursor: pointer; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; } .ds-nav-item svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-nav-item:hover { border-color: #1a4259; background: #0b2434; color: #f3f9fc; } .ds-nav-item.ds-is-active { border-color: #245970; background: #103247; color: #fff; } .ds-nav-item.ds-is-active::before { content: \"\"; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 2px; background: #54c9cf; } .ds-nav-item.ds-is-active svg { color: #65d2d7; } .ds-nav-item:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Service Status",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "以状态点和文字共同表达检查中、正常、警告或失败。",
+      "html": "<span class=\"ds-status ds-status-error\"><i aria-hidden=\"true\"></i>服务连接失败</span>",
+      "css": ".ds-status { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 10px; border: 1px solid #cfdee6; border-radius: 999px; background: #eef4f7; color: #526d7d; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; font-size: 10px; font-weight: 700; } .ds-status i { width: 7px; height: 7px; border-radius: 50%; background: #6e8796; box-shadow: 0 0 0 4px rgba(110,135,150,.12); } .ds-status-error { border-color: #ecc5cc; background: #fff3f5; color: #9e2f3d; } .ds-status-error i { background: #c13c4b; box-shadow: 0 0 0 4px rgba(193,60,75,.14); } .ds-status:hover { filter: brightness(.98); } .ds-status:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Metric Ledger",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "用细角色线、等宽数字和共享边界呈现关键运营指标。",
+      "html": "<article class=\"ds-metric\"><span>已发布产品</span><strong>128</strong><small>个产品档案</small></article>",
+      "css": ".ds-metric { position: relative; min-width: 210px; min-height: 132px; padding: 20px 22px; border: 1px solid #d9e4eb; border-radius: 14px; background: #fff; color: #0b2031; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; } .ds-metric::after { content: \"\"; position: absolute; right: 20px; top: 22px; width: 24px; height: 2px; background: #0b8d91; } .ds-metric span { display: block; color: #587182; font-size: 11px; font-weight: 700; } .ds-metric strong { display: block; margin-top: 12px; color: #0a2435; font-family: \"Noto Sans SC Display\", \"Noto Sans SC\", \"Microsoft YaHei\", sans-serif; font-size: 34px; font-weight: 760; font-variant-numeric: tabular-nums; letter-spacing: -.03em; } .ds-metric small { display: block; margin-top: 8px; color: #526c7c; font-size: 10px; } .ds-metric:hover { background: #fbfdfe; border-color: #b6cbd7; } .ds-metric:focus-within { outline: 2px solid #42b9c2; outline-offset: 2px; }"
+    },
+    {
+      "name": "Mission Tile",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "总览中以共享边界组织的高频任务入口。",
+      "html": "<button class=\"ds-mission\" type=\"button\"><span><b>维护制度资料</b><small>上传、预览并发布最新制度</small></span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14M14 7l5 5-5 5\"/></svg></button>",
+      "css": ".ds-mission { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 335px; min-height: 92px; padding: 17px; border: 1px solid #d9e4eb; background: #fff; color: #0b2031; text-align: left; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; cursor: pointer; transition: background 160ms ease, color 160ms ease; } .ds-mission b, .ds-mission small { display: block; } .ds-mission b { font-size: 12px; } .ds-mission small { margin-top: 4px; color: #536d7c; font-size: 10px; } .ds-mission svg { flex: 0 0 auto; width: 17px; height: 17px; fill: none; stroke: #4b8398; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-mission:hover { background: #f1f8fa; color: #0b609b; } .ds-mission:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; } .ds-mission:active { background: #e8f3f7; }"
+    },
+    {
+      "name": "Signal Path",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "以深色锚点和编号轨道解释受控回答链路。",
+      "html": "<ol class=\"ds-signal\"><li><span>01</span><div><b>接收</b><small>企业微信消息</small></div></li><li><span>02</span><div><b>识别</b><small>规则与语义路由</small></div></li><li><span>03</span><div><b>检索</b><small>可信业务资料</small></div></li><li><span>04</span><div><b>交付</b><small>回答与媒体</small></div></li></ol>",
+      "css": ".ds-signal { width: 280px; margin: 0; padding: 22px; list-style: none; border: 1px solid #163d52; border-radius: 14px; background: #0b2232; color: #eef7fa; font-family: \"Noto Sans SC\", \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif; } .ds-signal li { position: relative; display: grid; grid-template-columns: 34px 1fr; gap: 12px; min-height: 57px; } .ds-signal li:not(:last-child)::after { content: \"\"; position: absolute; left: 14px; top: 29px; bottom: 0; width: 1px; background: #275064; } .ds-signal li > span { display: grid; z-index: 1; width: 29px; height: 29px; place-items: center; border: 1px solid #35677a; border-radius: 50%; background: #0e2b3d; color: #63cbd0; font-size: 9px; font-weight: 800; font-variant-numeric: tabular-nums; } .ds-signal b, .ds-signal small { display: block; } .ds-signal b { color: #eaf4f7; font-size: 11px; } .ds-signal small { margin-top: 2px; color: #7395a7; font-size: 9px; } .ds-signal li:hover b { color: #fff; } .ds-signal:focus-visible { outline: 2px solid #42b9c2; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "轨道任务台账",
+    "overview": "这套系统把企业知识运营呈现为一条可追踪的工作轨道：深海军蓝导航轨承载长期方位，冷白工作区承载当天任务，蓝灰边界负责把资料、状态与操作组织成可快速扫描的台账。科技感来自精确对齐、连续状态信号和可靠的数据层级，而不是霓虹、渐变或装饰性图表。\n\n界面处于高频 Operate 模式，密度紧凑但不拥挤。主标题建立明确页级定位，任务入口、表格、表单和审核结果按职责分组；蓝色只承担主要动作，青绿色表示在线或已生效，琥珀色表示等待，深红色表示失败或破坏性风险。状态始终同时提供文字，确保颜色不是唯一线索。",
+    "keyCharacteristics": [
+      "深海军蓝导航轨与冷白工作区形成稳定的双区结构。",
+      "细蓝灰边界、14px 面板圆角和紧凑控件构成克制的企业控制台秩序。",
+      "自托管展示字用于页标题与面板标题，正文保持高可读系统字体栈。",
+      "线性 SVG 图标、等宽数字与显式状态文本强化可扫描性和可信感。",
+      "桌面固定轨道在窄屏转为横向任务轨，内容与表单顺序降为单列。"
+    ],
+    "rules": [
+      { "name": "The Signal Reserve Rule", "body": "行动蓝只表示可执行主动作，青绿色只表示在线或已生效，琥珀色只表示等待或注意，深红色只表示失败或破坏性风险；任何状态都必须同时显示文字。", "section": "colors" },
+      { "name": "The No Decorative Gradient Rule", "body": "表面使用纯色和边界建立层级，不使用渐变、霓虹发光或装饰性数据色带。", "section": "colors" },
+      { "name": "The Display Ownership Rule", "body": "自托管展示字只用于页标题、面板标题与关键数字；正文、表单和导航使用正文字体栈，避免整页视觉过重。", "section": "typography" },
+      { "name": "The Numeric Ledger Rule", "body": "指标、时间和表格数字使用等宽数字特性，不使用额外等宽字体破坏中文界面的统一性。", "section": "typography" },
+      { "name": "The Rail-to-Strip Rule", "body": "桌面始终保留稳定左轨；只有在 860px 及以下才转换为横向滚动任务轨，绝不把主导航压缩成无标签图标列。", "section": "layout" },
+      { "name": "The Task-Order Rule", "body": "响应式重排保持“确认状态 → 选择任务 → 执行操作 → 查看结果”的 DOM 顺序，不因视觉换列改变键盘和屏幕阅读器顺序。", "section": "layout" },
+      { "name": "The Flat-by-Default Rule", "body": "工作面板和数据容器静止时不使用阴影；阴影只表示交互响应、选中状态或脱离页面流的浮层。", "section": "elevation" },
+      { "name": "The Radius Hierarchy Rule", "body": "控件小于容器、容器小于主面板；不得把所有元素统一成同一个大圆角，也不得使用超大胶囊按钮替代普通操作按钮。", "section": "shapes" }
+    ],
+    "dos": [
+      "**Do** 保持“深色轨道 + 冷白工作区 + 细蓝灰边界”的双区结构。",
+      "**Do** 用行动蓝、信号青绿、警示琥珀和风险深红表达单义状态，并同时给出文字标签。",
+      "**Do** 在页标题、面板标题与关键数字使用自托管展示字，在正文与表单使用高可读系统字体栈。",
+      "**Do** 使用内联线性 SVG、可见的 `:focus-visible` 焦点和语义化控件。",
+      "**Do** 在 860px 以下把导航转换为横向任务轨，在 620px 以下按任务顺序展开为单列。"
+    ],
+    "donts": [
+      "**Don't** 使用霓虹、渐变、玻璃拟态或装饰性数据可视化代替清晰的状态和任务层级。",
+      "**Don't** 让颜色成为状态的唯一线索，也不要复用深红色表达普通强调。",
+      "**Don't** 给静止面板、指标或列表卡片添加投影；阴影只属于交互响应和临时浮层。",
+      "**Don't** 使用图标字体、Emoji 或不一致的实心图标替代 1.75px 线性 SVG。",
+      "**Don't** 用大面积留白降低高频操作密度，或在移动端打乱状态、任务、操作、结果的阅读顺序。"
+    ]
+  }
+}

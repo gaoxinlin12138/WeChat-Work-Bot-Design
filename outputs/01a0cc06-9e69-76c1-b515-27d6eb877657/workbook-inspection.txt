@@ -1,0 +1,7 @@
+{"kind":"sheet","id":"ws/gjzx92","name":"产品档案","index":0,"range":"A1:AI4","address":"A1:AI4"}
+{"kind":"sheet","id":"ws/r0hwzv","name":"说明","index":1,"range":"A1:B15","address":"A1:B15"}
+
+{"kind":"region","sheet":"产品档案","address":"A1:AI4","rows":4,"cols":35,"nonEmpty":93,"blank":47,"text":93,"maxTextLength":16,"preview":[["花洒产品信息收集表",null,null,null,null,null],["序号","产品型号","系列","产品描述","材质","档位"],["1","LTA-822","822系列","恒温淋浴花洒套装","精铜主体/不锈钢","3档"],[null,null,null,null,null,null]],"previewAddress":"A1:F4","previewRows":4,"previewCols":6}
+
+{"kind":"region","sheet":"说明","address":"A5:B10","rows":6,"cols":2,"nonEmpty":12,"text":12,"maxTextLength":48,"preview":[["步骤","说明"],["1","在“产品档案”中，每个产品使用一条产品行；产品型号为必填项。"],["2","产品行的第15–34列填写各配件的供应商。"],["3","如需填写配件采购价，请在产品行下一行的“主体供应商”列填写“价格”，并在第15–34列填写金额。"],["4","第3–4行为示例数据，正式使用时请替换或删除。请勿修改工作表名称和35列表头。"]],"previewAddress":"A5:B9","previewRows":5,"previewCols":2}
+{"kind":"region","sheet":"说明","address":"A12:B15","rows":4,"cols":2,"nonEmpty":7,"blank":1,"text":7,"maxTextLength":30,"preview":[["特别提醒",null],["导入状态","导入后的产品先进入草稿，可在管理台检查后再发布。"],["金额格式","套装价、主体价、成本价及配件采购价请填写数字，不要输入负数。"],["文件字段","新版模板已移除主图、图集、配置图和视频文件名字段。"]],"previewAddress":"A12:B15","previewRows":4,"previewCols":2}

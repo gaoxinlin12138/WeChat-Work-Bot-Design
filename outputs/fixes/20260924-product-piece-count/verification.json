@@ -1,0 +1,30 @@
+{
+  "time": "2026-09-24T17:19:12.026368+08:00",
+  "health_http": 200,
+  "dependencies": {
+    "postgresql": "ok",
+    "redis": "ok",
+    "llm": "configured",
+    "embedding": "configured",
+    "wecom": "online",
+    "wecom_directory": "configured"
+  },
+  "all_products_have_piece_count": true,
+  "existing_product_count": 1,
+  "inventory_not_invented": true,
+  "api_schema_has_piece_count": true,
+  "table_column_order_correct": true,
+  "editor_has_field": true,
+  "new_versions_served": true,
+  "script_matches_disk": true,
+  "css_matches_disk": true,
+  "pendingCount": 0,
+  "old_product_fields_unchanged_after_restart": true,
+  "isolated_test_schemas_remaining": 0,
+  "bot_auth_events": [
+    {
+      "event": "wecom_long_connection_authenticated",
+      "timestamp": "2026-09-24T09:18:15.187173Z"
+    }
+  ]
+}

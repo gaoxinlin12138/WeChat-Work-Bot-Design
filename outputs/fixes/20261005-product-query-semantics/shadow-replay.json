@@ -1,0 +1,176 @@
+{
+  "configured_mode": "shadow",
+  "database_read_only": true,
+  "planner": "deterministic_replay",
+  "checks": {
+    "material_field_retained": true,
+    "material_matches_published_data": true,
+    "set_material_clarifies": true,
+    "set_material_does_not_query": true,
+    "no_formal_v2_context": true,
+    "unseen_clarification_not_saved": true
+  },
+  "passed": true,
+  "cases": [
+    {
+      "query": "LY0653GDT-T主体有哪些材料组成?",
+      "delivered_content": "材质：ABS外壳铜水路",
+      "diff": {
+        "schema_version": 2,
+        "same_product_ids": true,
+        "legacy_product_ids": [
+          "d7782c3e-220c-41f7-b51c-65338fd64d19"
+        ],
+        "v2_product_ids": [
+          "d7782c3e-220c-41f7-b51c-65338fd64d19"
+        ],
+        "legacy_source_count": 1,
+        "v2_source_count": 1,
+        "same_known_result": true,
+        "same_result_type": true,
+        "same_requested_fields": true,
+        "same_answered_fields": true,
+        "same_content": true,
+        "same_permissions": true,
+        "same_semantics": true,
+        "delivered_engine": "legacy",
+        "legacy_outcome": {
+          "result_type": "fact",
+          "reason": "",
+          "requested_fields": [
+            "material"
+          ],
+          "answered_fields": [
+            "material"
+          ],
+          "content_summary": "材质：ABS外壳铜水路",
+          "content_fingerprint": "80cb0edbd8308682b49327c5fe5026c9d74584adb65b719ee81ac6a6e7379d61",
+          "permission_denied": false
+        },
+        "v2_outcome": {
+          "result_type": "fact",
+          "reason": "",
+          "requested_fields": [
+            "material"
+          ],
+          "answered_fields": [
+            "material"
+          ],
+          "content_summary": "材质：ABS外壳铜水路",
+          "content_fingerprint": "80cb0edbd8308682b49327c5fe5026c9d74584adb65b719ee81ac6a6e7379d61",
+          "permission_denied": false
+        },
+        "v2_validation": {
+          "errors": [],
+          "removed_fields": [],
+          "permission_denied_fields": [],
+          "ambiguities": [],
+          "proposed_fields": [
+            "material"
+          ],
+          "proposed_requests": [
+            {
+              "field": "material",
+              "evidence": "组成",
+              "source": "current"
+            }
+          ],
+          "original_fields": [
+            "material"
+          ],
+          "accepted_fields": [
+            "material"
+          ],
+          "field_semantics_version": 2
+        },
+        "v2_execution": {
+          "total": 1,
+          "page": 1,
+          "page_size": 5,
+          "product_ids": [
+            "d7782c3e-220c-41f7-b51c-65338fd64d19"
+          ]
+        },
+        "differences": []
+      }
+    },
+    {
+      "query": "LY0653GDT-T套装材料?",
+      "delivered_content": "材质：ABS外壳铜水路",
+      "diff": {
+        "schema_version": 2,
+        "same_product_ids": false,
+        "legacy_product_ids": [
+          "d7782c3e-220c-41f7-b51c-65338fd64d19"
+        ],
+        "v2_product_ids": [],
+        "legacy_source_count": 1,
+        "v2_source_count": 0,
+        "same_known_result": true,
+        "same_result_type": false,
+        "same_requested_fields": true,
+        "same_answered_fields": false,
+        "same_content": false,
+        "same_permissions": true,
+        "same_semantics": false,
+        "delivered_engine": "legacy",
+        "legacy_outcome": {
+          "result_type": "fact",
+          "reason": "",
+          "requested_fields": [
+            "material"
+          ],
+          "answered_fields": [
+            "material"
+          ],
+          "content_summary": "材质：ABS外壳铜水路",
+          "content_fingerprint": "80cb0edbd8308682b49327c5fe5026c9d74584adb65b719ee81ac6a6e7379d61",
+          "permission_denied": false
+        },
+        "v2_outcome": {
+          "result_type": "clarification",
+          "reason": "set_material_or_components",
+          "requested_fields": [
+            "material"
+          ],
+          "answered_fields": [],
+          "content_summary": "你想了解产品主体的材质，还是套装包含的配件？请回复：材质、配件。",
+          "content_fingerprint": "062e6da1fd1fc51bad227d20653b6aa45c5437930feaca44ca4dc9166799b18c",
+          "permission_denied": false
+        },
+        "v2_validation": {
+          "errors": [],
+          "removed_fields": [],
+          "permission_denied_fields": [],
+          "ambiguities": [
+            "set_material_or_components"
+          ],
+          "proposed_fields": [
+            "material"
+          ],
+          "proposed_requests": [
+            {
+              "field": "material",
+              "evidence": "套装材料",
+              "source": "current"
+            }
+          ],
+          "original_fields": [
+            "material"
+          ],
+          "accepted_fields": [
+            "material"
+          ],
+          "field_semantics_version": 2
+        },
+        "v2_execution": {},
+        "differences": [
+          "result_type",
+          "answered_fields",
+          "content",
+          "product_ids"
+        ]
+      }
+    }
+  ]
+}

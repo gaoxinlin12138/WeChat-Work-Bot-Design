@@ -1,0 +1,15 @@
+{
+  "ready_http_status": 200,
+  "ready": {
+    "status": "ready",
+    "service": "wecom-knowledge-bot",
+    "dependencies": {
+      "postgresql": "ok",
+      "redis": "ok",
+      "llm": "configured",
+      "embedding": "configured",
+      "wecom": "online"
+    }
+  },
+  "temporary_audit_or_test_schema_count": 0
+}

@@ -1,0 +1,39 @@
+{
+  "directory_timeout_blocks_ordinary_query": {
+    "answer_calls": 0,
+    "replies": [
+      [
+        "这次查询没有成功完成，请稍后再试一次。",
+        true
+      ]
+    ]
+  },
+  "all_image_sends_fail_but_reply_claims_sending": [
+    [
+      "已找到图片，正在发送。",
+      true
+    ]
+  ],
+  "script_restore_reactivates_old_versions": [
+    {
+      "version": 1,
+      "status": "published",
+      "current": true
+    },
+    {
+      "version": 2,
+      "status": "published",
+      "current": true
+    }
+  ],
+  "save_draft_on_published_product_changes_live_data": {
+    "status": "active",
+    "live_content": "产品型号：AUDIT-001；系列：；产品描述：；款式：；材质：铜；档位：4；颜色：；特殊功能：；出货地：；套装价：200.00元；主体价：None元；供应商：；主体供应商：；备注：；配件明细：；已关联媒体：无；价格口径：不含税、不含运费。",
+    "search_content": "产品型号：AUDIT-001；系列：；产品描述：；款式：；材质：铜；档位：4；颜色：；特殊功能：；出货地：；套装价：100.00元；主体价：None元；供应商：；主体供应商：；备注：；配件明细：；已关联媒体：无；价格口径：不含税、不含运费。"
+  },
+  "multiple_product_fields_only_first_answered": "材质：铜",
+  "newly_retrashed_product_is_purged_using_stale_cutoff": true,
+  "restored_before_delete_status": "active",
+  "concurrently_restored_active_product_deleted": true,
+  "temporary_schema_removed": true
+}

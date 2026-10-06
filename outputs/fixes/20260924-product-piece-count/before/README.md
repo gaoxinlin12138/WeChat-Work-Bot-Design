@@ -1,0 +1,283 @@
+# 企业微信智能知识库与产品机器人
+
+这是一个面向企业内部员工的企业微信机器人。系统先识别员工意图，再查询对应业务数据，最后由 DeepSeek 基于真实资料归纳回答。
+
+当前已经实现：
+
+- 企业微信官方 WebSocket 长连接接入，无需配置公网消息回调；
+- 公司制度上传、分页预览、复核发布、替换、回退和逐版本回收；
+- 制度关键词与向量混合检索，回答显示资料名称、具体条款和 PDF 页码；
+- 按“花洒产品档案”Excel 批量导入产品，维护套装价、主体价、成本价和供应商；
+- 同产品型号多规格匹配，以及主图、实物图、配置图和产品视频发送；
+- 回复话术管理、意图识别、问答测试和识别纠错记录；
+- PostgreSQL + pgvector、Redis 会话、项目备份及隔离数据库测试。
+
+当前采用单机部署：制度原文件和产品媒体保存在本地磁盘，索引与回收站清理使用 Web 进程内后台任务。尚未接入对象存储、OCR、独立任务 Worker、正式数据库迁移系统或多机共享部署。
+
+## 系统架构
+
+```text
+企业微信员工
+  ↕ 官方 WebSocket 长连接
+机器人进程：app.wecom.long_connection
+  ├─ 意图识别与多轮会话
+  ├─ PostgreSQL 17 + pgvector 0.8.1
+  ├─ Redis 共享会话
+  ├─ DeepSeek：意图判断与答案归纳
+  └─ 百炼 text-embedding-v3：1024 维向量
+
+管理员浏览器
+  → FastAPI 管理台：http://127.0.0.1:8000/admin
+  → 制度、产品、媒体、话术和识别记录管理
+```
+
+Web 管理台和企业微信机器人是两个独立进程，正式运行时两者都需要进程守护。机器人长连接只能启动一个相同配置的实例。
+
+## 环境要求
+
+- Python 3.12；
+- PostgreSQL 17，并启用 `vector`、`pg_trgm` 扩展；
+- Redis，生产环境必须启用；
+- 可访问 DeepSeek 与阿里云百炼接口的网络；
+- 企业微信机器人 ID 和 Secret。
+
+安装依赖：
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+```
+
+首次创建本地数据库时可运行：
+
+```powershell
+.venv\Scripts\python.exe -m scripts.setup_postgres
+```
+
+该脚本会交互式读取数据库管理员密码，并可能重设同名数据库账号密码。已有环境不要把它当作日常启动或升级命令。
+
+## 配置
+
+复制 `.env.example` 为 `.env`，在本机填写真实配置。数据库初始化配置保存在 `.database.env`。不要提交、展示或发送这两个文件中的真实密钥。
+
+生产环境至少应正确设置：
+
+```dotenv
+APP_ENV=production
+ADMIN_API_KEY=
+DATABASE_URL=
+REDIS_URL=
+
+WECOM_BOT_ID=
+WECOM_BOT_SECRET=
+WECOM_CORP_ID=
+WECOM_SECRET=
+WECOM_SALES_DEPARTMENT_ID=4
+
+LLM_BASE_URL=
+LLM_API_KEY=
+LLM_MODEL=
+
+EMBEDDING_BASE_URL=
+EMBEDDING_API_KEY=
+EMBEDDING_MODEL=text-embedding-v3
+EMBEDDING_DIMENSIONS=1024
+
+# LangGraph 是唯一业务编排器；checkpoint 可按环境独立启用
+LANGGRAPH_CHECKPOINT_ENABLED=false
+LANGGRAPH_CHECKPOINT_POOL_SIZE=4
+```
+
+`ADMIN_API_KEY` 用于保护管理台。远程访问管理台时必须使用 HTTPS 或受控内网入口，不要把 FastAPI、PostgreSQL 或 Redis 端口直接开放到公网。浏览器 Basic 认证用户名为 `admin`，密码为本机 `.env` 中的 `ADMIN_API_KEY`；只在服务器本机查看，不要发送到聊天或写入截图。
+
+首次建表后不要直接修改 `EMBEDDING_DIMENSIONS`。更换向量维度需要迁移字段并重新生成全部向量。
+
+业务智能体统一由 LangGraph 编排，不再保留另一套旧路由逻辑。
+`LANGGRAPH_CHECKPOINT_ENABLED=true` 会在 PostgreSQL 中初始化 LangGraph checkpoint 表，必须在
+数据库备份和隔离环境验证完成后单独开启。企业微信 `msgid` 会作为幂等请求标识，thread id 按企业、
+机器人和会话隔离并哈希保存。
+
+真实 checkpoint 恢复验证只接受显式的非生产 `TEST_DATABASE_URL`：
+
+```powershell
+$env:TEST_DATABASE_URL="postgresql://test-user:password@localhost/test-db"
+.\.venv\Scripts\python.exe scripts\check_langgraph_checkpoint.py
+```
+
+脚本不会回落到应用的 `DATABASE_URL`，未配置测试库时会直接拒绝运行。
+
+## 启动
+
+在 PyCharm 中右键项目根目录的 `一键启动项目.py` 并选择运行，或者在顶部运行配置中选择
+`一键启动全部服务`。脚本会按需启动 Redis、后端 API（同时提供管理台前端）和企业微信长连接，
+避免重复启动，并在管理台可用后自动打开浏览器。
+
+也可使用下面的命令分别启动各进程：
+
+启动管理台：
+
+```powershell
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+另开终端启动企业微信长连接：
+
+```powershell
+.venv\Scripts\python.exe -m app.wecom.long_connection
+```
+
+常用地址：
+
+- 管理台：<http://127.0.0.1:8000/admin>
+- 存活检查：<http://127.0.0.1:8000/health>
+- 就绪检查：<http://127.0.0.1:8000/health/ready>
+- 开发接口文档：<http://127.0.0.1:8000/docs>
+
+`/health` 返回 `status=ok` 只代表 Web 进程存活。正式可用应以 `/health/ready` 返回 HTTP 200 为准；该接口会检查数据库、必需表、向量维度、Redis 和模型配置。模型显示 `configured` 仅代表配置完整，仍需通过真实问答验证。
+
+长连接日志出现 `wecom_long_connection_authenticated` 后，才表示企业微信认证完成。
+
+### Windows 持续运行
+
+当前单机使用 Redis 8.10.1 Windows portable 包。新机器可通过 winget 安装：
+
+```powershell
+winget install --exact --id taizod1024.redis-windows-fork --source winget --scope user
+```
+
+切换生产配置并注册守护任务：
+
+```powershell
+.venv\Scripts\python.exe -m scripts.configure_production
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_runtime_tasks.ps1
+```
+
+`configure_production` 会设置 `APP_ENV=production`，并仅在管理密钥为空时生成随机密钥，不会在终端输出密钥。守护脚本创建以下 Windows 计划任务：
+
+- `WeComKnowledgeBot-Redis`
+- `WeComKnowledgeBot-API`
+- `WeComKnowledgeBot-WeCom`
+
+三个任务在当前 Windows 用户登录后启动。服务子进程退出后，守护脚本会在 5 秒后重新启动；守护脚本自身退出时，任务计划在一分钟后重启。查看状态：
+
+```powershell
+Get-ScheduledTask -TaskName 'WeComKnowledgeBot-*' |
+    Select-Object TaskName, State
+```
+
+Redis 仅监听 `127.0.0.1:6379`，运行数据位于 `%LOCALAPPDATA%\WeComKnowledgeBot\redis`。它只保存带时效的会话和缓存，不替代 PostgreSQL 与项目文件备份。
+
+每次进程启动会在 `logs` 生成带时间戳的 `api_runtime_*`、`wecom_runtime_*` 和 `redis_runtime_*` 日志。当前尚未自动清理历史日志，正式长期运行需要另设日志保留策略。
+
+## 资料管理规则
+
+### 公司制度
+
+制度支持含文本层的 PDF、TXT 和 Markdown。图片型 PDF 会标记为 `needs_ocr`；当前没有 OCR 服务，应先在外部生成含文本层的文件再上传。
+
+制度更新流程：
+
+1. 上传新文件，生成待复核版本，当前发布版继续生效；
+2. 在管理台分页预览正文和页码；
+3. 复核后发布新版，旧发布版自动进入制度回收站；
+4. 恢复历史发布版时，仅该版本重新生效，当前发布版进入回收站；
+5. 未发布草稿继续保留，删除、恢复、永久删除和到期清理都只影响所选版本。
+
+只有 `published` 且 `is_current=true` 的制度参与员工问答。发布后应等待 `embedding_status=ready`，再进行问答验收。
+
+### 产品与媒体
+
+产品以 `花洒产品档案 .xlsx` 的“产品档案”工作表为准。系统识别35列表头：14列产品基础资料、20列配件供应商与1列备注。导入后统一保存为草稿，图片和视频不再通过文件名字段匹配，请在产品编辑器中直接上传并关联。已发布产品的编辑先停留在草稿视图，机器人、搜索和媒体发送继续使用发布快照，发布时再一起切换字段、搜索正文和媒体引用。
+
+产品型号允许重复，不设置唯一约束；颜色、材质、款式等不同的产品分别保留记录。机器人匹配到多条时先让员工选择，再回答套装价、主体价、材质、档位等字段，或发送主图、实物图、配置图和产品视频。价格统一按不含税、不含运费回答。
+
+成本价和配件采购价属于敏感字段。机器人通过企业微信通讯录中的发送人 `userid` 与部门归属进行字段级鉴权：`WECOM_SALES_DEPARTMENT_ID` 所指部门及全部子部门成员仅可在私聊中查看；其他部门、群聊以及通讯录接口异常时均不展示。公共检索文本和向量不包含成本价、采购价。通讯录同步 Secret 只保存在本机 `.env`，可信 IP 应限制为运行机器或服务器的固定公网 IP。
+
+### 回复话术
+
+话术可以导入、编辑和发布。正式使用前应由业务负责人逐条复核适用场景、员工回复和禁止表达。识别纠错记录只用于后续分析，不会自动修改模型提示词或生产资料。
+
+## 检索与回答
+
+制度和通用知识使用 `knowledge_documents`、`knowledge_chunks`；产品、媒体和话术使用各自结构化数据表。
+
+模型接口采用 OpenAI-compatible 协议：
+
+- Embedding 正常时使用向量与关键词混合检索；
+- Embedding 故障时降级到关键词检索；
+- LLM 故障时返回可核对的原文和引用；
+- 没有可靠资料时应明确说明未找到依据，不根据常识编造制度或产品信息。
+
+制度引用面向员工显示“资料名称 + 具体条款 + PDF 页码”，不得显示内部资料序号、证据序号或检索片段编号。
+
+## 测试与评测
+
+基础回归不会调用真实模型：
+
+```powershell
+.venv\Scripts\python.exe -m pytest
+.venv\Scripts\ruff.exe check app tests scripts
+.venv\Scripts\python.exe -m compileall -q app scripts tests
+.venv\Scripts\python.exe -m scripts.evaluate_intent --mode rules
+.venv\Scripts\python.exe -m scripts.evaluate_chain --mode fixture
+```
+
+数据库集成测试默认跳过。优先配置专用 `TEST_DATABASE_URL`；也可以明确启用当前数据库中的随机隔离 schema：
+
+```powershell
+$env:RUN_DATABASE_TESTS = '1'
+try {
+    .venv\Scripts\python.exe -m pytest
+} finally {
+    Remove-Item Env:RUN_DATABASE_TESTS -ErrorAction SilentlyContinue
+}
+```
+
+测试只删除自己创建的 `codex_test_*` schema，不应对生产资料执行写入测试。普通 FastAPI 测试会禁用真实回收站清理、索引和 checkpoint 启动，并拒绝应用工厂连接配置中的业务库或 Redis。
+
+调用当前 DeepSeek 的意图评测：
+
+```powershell
+.venv\Scripts\python.exe -m scripts.evaluate_intent
+.venv\Scripts\python.exe -m scripts.evaluate_chain --mode model
+```
+
+固定样本评测通过不代表所有真实问题都正确。正式上线前必须使用真实已发布资料抽样复测。
+
+## 备份与恢复
+
+执行备份：
+
+```powershell
+.venv\Scripts\python.exe -m scripts.backup_project --pg-dump 'C:\Program Files\PostgreSQL\17\bin\pg_dump.exe'
+```
+
+如果 `pg_dump` 已在 PATH，可省略 `--pg-dump`。备份写入 `outputs/backups/<时间>/`，包含：
+
+- PostgreSQL `public` schema 自定义格式归档；
+- 制度原文件；
+- 产品图片和视频；
+- `COMPLETE.json` 完成标记。
+
+备份不包含环境文件和密钥。没有 `COMPLETE.json` 的目录不能视为完整备份。`pg_restore --list` 只能证明归档目录可读，正式上线前还必须在隔离数据库和独立文件目录中完成完整恢复演练。
+
+## 上线顺序
+
+建议按以下顺序落地：
+
+1. 使用公司专用、长期在线的单机运行；
+2. 启用 Redis，设置 `APP_ENV=production` 和强管理密钥；
+3. 注册 Windows 守护任务，实现用户登录启动和异常重启；
+4. 导入并复核真实制度、话术、产品、图片和视频；
+5. 验证制度引用、同编号产品选择以及企业微信图片/视频发送；
+6. 完成隔离恢复演练和异机备份；
+7. 先向 5～10 名员工灰度开放，观察识别记录和失败问题；
+8. 连续稳定运行后再逐步扩大使用范围。
+
+当前守护任务需要指定 Windows 用户完成登录后才启动；若目标服务器要求“无人登录也运行”，应改为 Windows 服务或系统级启动任务。自动备份、历史日志清理和故障告警仍需另行配置。
+
+多实例部署前必须先处理共享文件存储、数据库迁移、后台任务去重和独立 Worker。当前本地磁盘方案不能直接作为多机部署方案。
+
+## 项目文档
+
+- [上线部署指南](上线部署指南.md)：生产环境准备、验收、备份与恢复细则。
