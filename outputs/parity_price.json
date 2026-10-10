@@ -1,0 +1,3187 @@
+{
+  "schema_version": 1,
+  "mode": "shadow_vs_on_read_only_database",
+  "summary": {
+    "total_cases": 62,
+    "matched_cases": 62,
+    "parity_rate": 1.0,
+    "multi_turn_cases": 15,
+    "multi_turn_parity_rate": 1.0,
+    "regressions": 0,
+    "known_open_gaps": 0,
+    "leak_cases": 0,
+    "refusal_cases": 0,
+    "accepted_missing_cases": 2
+  },
+  "regressions": [],
+  "results": [
+    {
+      "case_id": "parity-001",
+      "query": "LY0653GDT 的材质",
+      "turns": [
+        "LY0653GDT 的材质"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-002",
+      "query": "LY0653GDT 的价格",
+      "turns": [
+        "LY0653GDT 的价格"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail"
+      ],
+      "required_fields": [
+        "套装价"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "套装价": "234.00元"
+        },
+        "leaked": [],
+        "preview": "套装价：234.00元"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "套装价": "234.00元"
+        },
+        "leaked": [],
+        "preview": "套装价：234.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-003",
+      "query": "LY0653GDT 的颜色和档位",
+      "turns": [
+        "LY0653GDT 的颜色和档位"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail",
+        "multi-field"
+      ],
+      "required_fields": [
+        "颜色",
+        "档位"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰"
+        },
+        "leaked": [],
+        "preview": "档位：4"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "颜色": "灰玻璃·喷灰",
+          "档位": "4"
+        },
+        "leaked": [],
+        "preview": "颜色：灰玻璃·喷灰"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-004",
+      "query": "LY0653GDT 哪里发货",
+      "turns": [
+        "LY0653GDT 哪里发货"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail"
+      ],
+      "required_fields": [
+        "出货地"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "出货地": "福建泉州"
+        },
+        "leaked": [],
+        "preview": "出货地：福建泉州"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "出货地": "福建泉州"
+        },
+        "leaked": [],
+        "preview": "出货地：福建泉州"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-005",
+      "query": "LY0653GDT 供应商是谁",
+      "turns": [
+        "LY0653GDT 供应商是谁"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail"
+      ],
+      "required_fields": [
+        "供应商"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "供应商": "洁作"
+        },
+        "leaked": [],
+        "preview": "供应商：洁作"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "供应商": "洁作"
+        },
+        "leaked": [],
+        "preview": "供应商：洁作"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-006",
+      "query": "LY0653GDT 主体价和套装价",
+      "turns": [
+        "LY0653GDT 主体价和套装价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "detail",
+        "multi-field"
+      ],
+      "required_fields": [
+        "主体价",
+        "套装价"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "主体价": "156.00元",
+          "套装价": "234.00元"
+        },
+        "leaked": [],
+        "preview": "主体价：156.00元"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "主体价": "156.00元",
+          "套装价": "234.00元"
+        },
+        "leaked": [],
+        "preview": "主体价：156.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-007",
+      "query": "LY0653GDT 的介绍",
+      "turns": [
+        "LY0653GDT 的介绍"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "overview",
+        "defect"
+      ],
+      "required_fields": [
+        "产品描述"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒"
+        },
+        "leaked": [],
+        "preview": "产品描述：钢琴四档数显氛围灯大置物套装花洒"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒"
+        },
+        "leaked": [],
+        "preview": "产品描述：钢琴四档数显氛围灯大置物套装花洒"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-008",
+      "query": "LY0653GDT 的全部参数",
+      "turns": [
+        "LY0653GDT 的全部参数"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "overview",
+        "defect"
+      ],
+      "required_fields": [
+        "材质",
+        "套装价",
+        "供应商"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "图片",
+        "视频"
+      ],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "主体价": "156.00元",
+          "套装价": "234.00元",
+          "件数": "<未登记>",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "图片": "共2张，产品图1张（822套装.jpg）；主体图1张（822主体.jpg）",
+          "视频": "共1个（redpandacompress_822太空铝龙头视频.mp4）",
+          "配件明细": "",
+          "供应商": "洁作",
+          "系列": "枪灰0653四档套装",
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "特殊功能": "",
+          "出货地": "福建泉州",
+          "主体供应商": "洁作"
+        },
+        "leaked": [],
+        "preview": "主体价：156.00元"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653四档套装",
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "特殊功能": "<未登记>",
+          "出货地": "福建泉州",
+          "套装价": "234.00元",
+          "主体价": "156.00元",
+          "件数": "<未登记>",
+          "备注": "5只装",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "配件明细": ""
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0653GDT"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [
+        "供应商",
+        "特殊功能"
+      ],
+      "accepted_missing_observed": [
+        "图片",
+        "视频"
+      ],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-009",
+      "query": "LY0653GDT",
+      "turns": [
+        "LY0653GDT"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "overview"
+      ],
+      "required_fields": [
+        "产品型号",
+        "材质",
+        "备注"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "图片",
+        "视频"
+      ],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653四档套装",
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "出货地": "福建泉州",
+          "套装价": "234.00元",
+          "主体价": "156.00元",
+          "件数": "<未登记>",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "备注": "5只装",
+          "价格口径": "不含税、不含运费",
+          "配件明细": "",
+          "图片": "共2张，产品图1张（822套装.jpg）；主体图1张（822主体.jpg）",
+          "视频": "共1个（redpandacompress_822太空铝龙头视频.mp4）"
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0653GDT"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653四档套装",
+          "产品描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "特殊功能": "<未登记>",
+          "出货地": "福建泉州",
+          "套装价": "234.00元",
+          "主体价": "156.00元",
+          "件数": "<未登记>",
+          "备注": "5只装",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "配件明细": ""
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0653GDT"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [
+        "价格口径",
+        "图片",
+        "视频"
+      ],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-010",
+      "query": "LY0653GDT 的成本价",
+      "turns": [
+        "LY0653GDT 的成本价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-011",
+      "query": "LY0653GDT 的采购价",
+      "turns": [
+        "LY0653GDT 的采购价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-012",
+      "query": "LY0653GDT 的成本价",
+      "turns": [
+        "LY0653GDT 的成本价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": true,
+      "tags": [
+        "sensitive",
+        "permission"
+      ],
+      "required_fields": [
+        "成本价"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "成本价": "216.00元"
+        },
+        "leaked": [],
+        "preview": "成本价：216.00元"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "成本价": "216.00元"
+        },
+        "leaked": [],
+        "preview": "成本价：216.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-013",
+      "query": "LY0653GDT 和 LY0689GT 哪个贵",
+      "turns": [
+        "LY0653GDT 和 LY0689GT 哪个贵"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "compare"
+      ],
+      "required_fields": [
+        "套装价"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "系列": "镀枪灰0689四档套装",
+          "颜色": "灰玻璃·枪灰",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "对比": "LY0689GT 的套装价最高（258.00元），LY0653GDT 最低（234.00元）。"
+        },
+        "leaked": [],
+        "preview": "已发布产品共展示 2 款："
+      },
+      "on": {
+        "sources": 2,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "套装价": "258.00元",
+          "对比": "LY0689GT 的套装价最高（258.00元），LY0653GDT 最低（234.00元）。"
+        },
+        "leaked": [],
+        "preview": "找到 2 款符合条件的产品，第 1/1 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-014",
+      "query": "LY0653GDT 和 LY0653GDT-T 哪个贵",
+      "turns": [
+        "LY0653GDT 和 LY0653GDT-T 哪个贵"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "compare"
+      ],
+      "required_fields": [
+        "套装价"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴三档数显氛围灯简易大置物套装花洒",
+          "系列": "枪灰0653简易三档套装",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "3",
+          "套装价": "211.00元",
+          "主体价": "156.00元",
+          "对比": "LY0653GDT 的套装价最高（234.00元），LY0653GDT-T 最低（211.00元）。"
+        },
+        "leaked": [],
+        "preview": "LY0653GDT系列目前有 2 款："
+      },
+      "on": {
+        "sources": 2,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "套装价": "211.00元",
+          "对比": "LY0653GDT 的套装价最高（234.00元），LY0653GDT-T 最低（211.00元）。"
+        },
+        "leaked": [],
+        "preview": "找到 2 款符合条件的产品，第 1/1 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-015",
+      "query": "LY0653GDT 的配件",
+      "turns": [
+        "LY0653GDT 的配件"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "components"
+      ],
+      "required_fields": [
+        "配件"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-016",
+      "query": "发我 LY0653GDT 的产品图",
+      "turns": [
+        "发我 LY0653GDT 的产品图"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "media"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "正在发送": "822套装.jpg。"
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路已找到 1 项产品图，正在发送：822套装.jpg。"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "正在发送": "822套装.jpg。"
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路已找到 1 项产品图，正在发送：822套装.jpg。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-017",
+      "query": "LY0653GDT 主体图",
+      "turns": [
+        "LY0653GDT 主体图"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "media"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "正在发送": "822主体.jpg。"
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路已找到 1 项主体图，正在发送：822主体.jpg。"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "822",
+          "项主体图": ""
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路共有 1 项主体图："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "正在发送"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-018",
+      "query": "LY0653GDT 有没有视频",
+      "turns": [
+        "LY0653GDT 有没有视频"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "media"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "redpandacompress",
+          "项安装视频": ""
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路共有 1 项安装视频："
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "redpandacompress",
+          "项安装视频": ""
+        },
+        "leaked": [],
+        "preview": "LY0653GDT · 灰玻璃·喷灰 / ABS外壳铜水路共有 1 项安装视频："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-019",
+      "query": "0653 的材质",
+      "turns": [
+        "0653 的材质"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "catalog",
+        "fragment"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653圆杆四档套装",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "出货地": "福建泉州",
+          "套装价": "208.00元",
+          "主体价": "156.00元"
+        },
+        "leaked": [],
+        "preview": "0653系列目前有 5 款："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "找到 5 款符合条件的产品，第 1/1 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "出货地",
+        "套装价",
+        "描述",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-020",
+      "query": "0653 和 0689 哪个便宜",
+      "turns": [
+        "0653 和 0689 哪个便宜"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "catalog",
+        "compare"
+      ],
+      "required_fields": [
+        "套装价"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 8,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "系列": "枪灰0653圆杆四档套装",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "套装价": "208.00元",
+          "主体价": "156.00元",
+          "对比": "LY0689KT 的套装价最高（348.00元），LY0653GDT-Y 最低（208.00元）。"
+        },
+        "leaked": [],
+        "preview": "0653系列目前有 8 款，第 1/2 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "套装价": "258.00元",
+          "对比": "LY0689GT 的套装价最高（258.00元），LY0653GDT-T 最低（211.00元）。"
+        },
+        "leaked": [],
+        "preview": "找到 8 款符合条件的产品，第 1/2 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [
+        "套装价",
+        "对比"
+      ],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-021",
+      "query": "你们有哪些产品",
+      "turns": [
+        "你们有哪些产品"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "catalog",
+        "pagination"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 8,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "系列": "镀枪灰808方杆带灯冷热四档套装(铜芯)",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "套装价": "270.00元",
+          "主体价": "180.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 1/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 1/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-022",
+      "query": "帮我推荐一款适合家用的花洒",
+      "turns": [
+        "帮我推荐一款适合家用的花洒"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "catalog",
+        "recommend"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 0,
+        "refusal": true,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请先提供具体产品型号后再查询，例如“LY0669GT 配件价格”。如果你想查看产品目录，请说“查看产品目录”。"
+      },
+      "on": {
+        "sources": 10,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0669GT-A",
+          "系列": "奶白808方杆带灯冷热四档套装(铜芯)",
+          "材质": "ABS外壳铜水路",
+          "颜色": "奶白玻璃·奶白",
+          "特殊功能": "<未登记>",
+          "套装价": "275.00元",
+          "推荐依据": "材质为ABS外壳铜水路、颜色为奶白玻璃·奶白、套装价为275.00元"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 1/7 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-023",
+      "query": "有没有便宜点的花洒",
+      "turns": [
+        "有没有便宜点的花洒"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "catalog"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [
+        "价格口径",
+        "备注"
+      ],
+      "shadow": {
+        "sources": 0,
+        "refusal": true,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请先提供具体产品型号后再查询，例如“LY0669GT 配件价格”。如果你想查看产品目录，请说“查看产品目录”。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0688GT",
+          "套装价": "144.00元"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 1/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-024",
+      "query": "公司的迟到规定是什么",
+      "turns": [
+        "公司的迟到规定是什么"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "最小统计单位": "迟到≤30分钟按缺勤0.5小时核算；30分钟＜迟到≤60分钟按缺勤1小时核算；迟到＞60分钟视为旷工。迟到不得以加班加点时数冲抵。员工因众所周知的不可抗因素导致迟到，免于处罚。",
+          "补充细节": "",
+          "定义": "迟到指规定上班时间之后30分钟内到岗。该定义与6.3条中以60分钟为界的统计规则并存，使用时建议结合具体考勤统计口径核对。",
+          "免打卡": "因特殊情况需要免打卡，需提交“免打卡申请”，经总经理批准后生效。",
+          "驻分部考勤": "因公到分部（分厂、分公司）工作期间，应执行分部的考勤时间。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "公司迟到以0.5小时为最小统计单位：迟到≤30分钟按缺勤0.5小时核算；30分钟＜迟到≤60分钟按缺勤1小时核算；迟到＞60分钟视为旷工。迟"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "30",
+          "结论": "迟到按30分钟为界分档核算，超过60分钟即视为旷工。**",
+          "具体如下": "",
+          "分钟": "视为旷工。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "**结论：迟到按30分钟为界分档核算，超过60分钟即视为旷工。**"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "免打卡",
+        "定义",
+        "最小统计单位",
+        "补充细节",
+        "驻分部考勤"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-025",
+      "query": "年假怎么申请",
+      "turns": [
+        "年假怎么申请"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 3,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "结论": "<未登记>",
+          "依据": "目前可见的请假规定主要涉及春节前请假、事假、病假、续假、批假等，未出现年假申请流程。",
+          "注意事项": "若按一般请假手续理解，现有资料仅明确非紧急情况不接受电话、短信、微信和口头告知等形式的请假；紧急情况无法提前办理时，应在当日上班时间内由本人或家属、亲友、同事向直属领导说明原因，获准后最迟于返岗后1个工作日内补办手续。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "结论：现有资料中未登记“年假申请”的具体条款，无法仅依据给定资料回答年假如何申请；资料不足，不做推测。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "结论": "<未登记>",
+          "依据": "现有条款仅覆盖调休、请假、事假、病假、工伤假和批假规定，未见年假条款。",
+          "注意事项": "与请假相关的一般要求可参考以下规定，但不能视为年假规定。",
+          "一般流程要点": "",
+          "提前办理": "请假应提前办理手续，做好工作交接，经权限领导批准后生效；请假以0.5小时为最小统计单位，请假期应不超过15天/年，特殊情况须总经理特批。",
+          "提前时限": "假期＜3天，应提前1天请假；假期≥3天，应提前3天请假。",
+          "紧急情况": "非紧急情况不接受电话、短信、微信和口头告知等形式的请假；紧急情况无法提前办理时，应在当日上班时间内由本人或家属、亲友、同事向直属领导阐明原因，获准后最迟于返岗后1个工作日内补办手续。",
+          "续假": "需续假应提前以电话、微信等方式向上级领导申请，获准后续假生效，最迟于返岗后1个工作日内办理续假手续。",
+          "指定代理人": "间接生产部门、职能部门员工，以及科长级及以上管理层请假应指定职务代理人（授权不授责），请假3天以上应提交“工作交接清单”，否则不予准假。",
+          "批假权限": "经理级（含以上人员）、科长级及办公室人员请假＞3天、基层员工请假＞15天，需批至总经理。",
+          "部门比例": "原则上同一天内同部门请假人员不得超过部门总人数的5%；人数少于10的部门，同时请假人员不得超过1名。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "结论：提供的资料中未登记年假制度，无法归纳年假申请流程和规定。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [
+        "依据",
+        "注意事项"
+      ],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-026",
+      "query": "客户嫌价格高怎么回复",
+      "turns": [
+        "客户嫌价格高怎么回复"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "如可直接补充": "采购数量、当前报价或客户目标价。"
+        },
+        "leaked": [],
+        "preview": "这是“报价议价”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "如可直接补充": "采购数量、当前报价或客户目标价。"
+        },
+        "leaked": [],
+        "preview": "这是“报价议价”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-027",
+      "query": "材质",
+      "turns": [
+        "LY0653GDT 套装材质",
+        "材质"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "clarification"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-028",
+      "query": "配件",
+      "turns": [
+        "LY0653GDT 套装材质",
+        "配件"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "clarification"
+      ],
+      "required_fields": [
+        "配件"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-029",
+      "query": "前者",
+      "turns": [
+        "LY0653GDT 套装材质",
+        "前者"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "clarification"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-030",
+      "query": "后者",
+      "turns": [
+        "LY0653GDT 套装材质",
+        "后者"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "clarification"
+      ],
+      "required_fields": [
+        "配件"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "PVC",
+          "配件明细": "",
+          "供应商": "南辉"
+        },
+        "leaked": [],
+        "preview": "配件明细（共15项）："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-031",
+      "query": "它的价格",
+      "turns": [
+        "LY0653GDT 的材质",
+        "它的价格"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pronoun"
+      ],
+      "required_fields": [
+        "套装价"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请问您想查询哪款产品的价格？"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "套装价": "234.00元"
+        },
+        "leaked": [],
+        "preview": "套装价：234.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-032",
+      "query": "换成 LY0689GT",
+      "turns": [
+        "LY0653GDT 的材质",
+        "换成 LY0689GT"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "switch"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0689GT",
+          "系列": "镀枪灰0689四档套装",
+          "产品描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·枪灰",
+          "出货地": "福建泉州",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "件数": "<未登记>",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "备注": "10只装",
+          "价格口径": "不含税、不含运费",
+          "配件明细": "",
+          "图片": "共0张",
+          "视频": "共0个"
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0689GT"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0689GT",
+          "系列": "镀枪灰0689四档套装",
+          "产品描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·枪灰",
+          "特殊功能": "<未登记>",
+          "出货地": "福建泉州",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "件数": "<未登记>",
+          "备注": "10只装",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "配件明细": ""
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0689GT"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "价格口径",
+        "图片",
+        "视频"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-033",
+      "query": "那 LY0689GT 呢",
+      "turns": [
+        "LY0653GDT 的材质",
+        "那 LY0689GT 呢"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "switch"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0689GT",
+          "系列": "镀枪灰0689四档套装",
+          "产品描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·枪灰",
+          "出货地": "福建泉州",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "件数": "<未登记>",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "备注": "10只装",
+          "价格口径": "不含税、不含运费",
+          "配件明细": "",
+          "图片": "共0张",
+          "视频": "共0个"
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0689GT"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0689GT",
+          "系列": "镀枪灰0689四档套装",
+          "产品描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·枪灰",
+          "特殊功能": "<未登记>",
+          "出货地": "福建泉州",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "件数": "<未登记>",
+          "备注": "10只装",
+          "供应商": "南辉",
+          "主体供应商": "洁作",
+          "配件明细": ""
+        },
+        "leaked": [],
+        "preview": "产品型号：LY0689GT"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "价格口径",
+        "图片",
+        "视频"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-034",
+      "query": "年假怎么申请",
+      "turns": [
+        "LY0653GDT 的材质",
+        "年假怎么申请"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "switch-topic"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 3,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "结论": "给定资料中未包含年假（年度休假）的申请规定，无法依据现有资料回答公司年假具体如何申请。",
+          "依据": "<未登记>",
+          "请假手续如下": "",
+          "非紧急情况": "不接受电话、短信、微信和口头告知等形式的请假。",
+          "办理时限": "因紧急情况无法提前办理时，应在当日上班时间内由本人或家属、亲友、同事向直属领导阐明原因，获准后最迟于返岗后1个工作日内补办手续。",
+          "申请方式": "提前以电话、微信等方式向上级领导申请，获准后续假生效。",
+          "补办时限": "最迟于返岗后1个工作日内办理续假手续。",
+          "适用对象": "间接生产部门、职能部门员工，以及科长级及以上管理层。",
+          "要求": "请假应指定职务代理人（授权不授责）；请假3天以上应提交“工作交接清单”，否则不予准假。",
+          "部门同日请假": "原则上不得超过部门总人数的5%；人数少于10人的部门，同时请假人员不得超过1名。",
+          "注意事项": "<未登记>",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "结论：给定资料中未包含年假（年度休假）的申请规定，无法依据现有资料回答公司年假具体如何申请。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "经理人员如下": "经理级（含以上人员）；科长级、办公室人员请假＞3 天；基层员工请假＞15 天。",
+          "注意事项": "上述均为资料中“请假规定”等通用条款，资料未单列年假类别、年假额度、年假审批流程或年假折算规则，具体年假申请应另查公司年假专项制度或咨询人事部。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "给定资料（YY-HR-SD-05 考勤管理制度）中未登记“年假”的专门规定，也未登记年假申请流程。仅能提供资料中与请假相关、可能适用于年假申"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "依据",
+        "办理时限",
+        "申请方式",
+        "结论",
+        "补办时限",
+        "要求",
+        "请假手续如下",
+        "适用对象",
+        "部门同日请假",
+        "非紧急情况"
+      ],
+      "differing": [
+        "注意事项"
+      ],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-035",
+      "query": "LY0653GDT 的成本价和材质",
+      "turns": [
+        "LY0653GDT 的成本价和材质"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission",
+        "mixed"
+      ],
+      "required_fields": [
+        "材质"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "材质": "ABS外壳铜水路"
+        },
+        "leaked": [],
+        "preview": "材质：ABS外壳铜水路"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-036",
+      "query": "LY0653GDT 的成本价和主体价",
+      "turns": [
+        "LY0653GDT 的成本价和主体价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission",
+        "mixed"
+      ],
+      "required_fields": [
+        "主体价"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "主体价": "156.00元"
+        },
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": true,
+        "fields": {
+          "主体价": "156.00元"
+        },
+        "leaked": [],
+        "preview": "主体价：156.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-037",
+      "query": "LY0653GDT 和 LY0689GT 哪个成本高",
+      "turns": [
+        "LY0653GDT 和 LY0689GT 哪个成本高"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission",
+        "compare"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "手轮+钢琴四档数显氛围灯大置物花洒",
+          "系列": "镀枪灰0689四档套装",
+          "颜色": "灰玻璃·枪灰",
+          "材质": "不锈钢壳铜水路",
+          "档位": "4",
+          "套装价": "258.00元",
+          "主体价": "186.00元",
+          "对比": "LY0689GT 的套装价最高（258.00元），LY0653GDT 最低（234.00元）。"
+        },
+        "leaked": [],
+        "preview": "已发布产品共展示 2 款："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "产品型号",
+        "套装价",
+        "对比",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-038",
+      "query": "所有产品的成本价",
+      "turns": [
+        "所有产品的成本价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission",
+        "catalog"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 8,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "系列": "镀枪灰808方杆带灯冷热四档套装(铜芯)",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "套装价": "270.00元",
+          "主体价": "180.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 1/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "产品型号",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-039",
+      "query": "成本价最高的产品",
+      "turns": [
+        "成本价最高的产品"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission",
+        "sort"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": true,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请先提供具体产品型号后再查询，例如“LY0669GT 配件价格”。如果你想查看产品目录，请说“查看产品目录”。"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-040",
+      "query": "LY0653GDT 的采购价和成本价",
+      "turns": [
+        "LY0653GDT 的采购价和成本价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "sensitive",
+        "permission"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": true,
+        "fields": {},
+        "leaked": [],
+        "preview": "你当前没有查看成本价和采购价的权限。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-041",
+      "query": "LY0653GDT 的成本价和采购价",
+      "turns": [
+        "LY0653GDT 的成本价和采购价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": true,
+      "tags": [
+        "sensitive",
+        "permission"
+      ],
+      "required_fields": [
+        "成本价"
+      ],
+      "accepted_missing_in_on": [
+        "采购价"
+      ],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "成本价": "216.00元"
+        },
+        "leaked": [],
+        "preview": "成本价：216.00元"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "成本价": "216.00元"
+        },
+        "leaked": [],
+        "preview": "成本价：216.00元"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-042",
+      "query": "第2页",
+      "turns": [
+        "你们有哪些产品",
+        "第2页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "absolute"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0601NBT-Cu",
+          "描述": "手轮两档无数显氛围灯简易大置物花洒",
+          "系列": "奶白0669二档主体套装（611升级款）",
+          "颜色": "奶白玻璃·奶白",
+          "材质": "ABS外壳铜水路",
+          "档位": "2",
+          "套装价": "144.00元",
+          "主体价": "104.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 2/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0601NBT-Cu"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 2/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-043",
+      "query": "下一页",
+      "turns": [
+        "你们有哪些产品",
+        "下一页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0601NBT-Cu",
+          "描述": "手轮两档无数显氛围灯简易大置物花洒",
+          "系列": "奶白0669二档主体套装（611升级款）",
+          "颜色": "奶白玻璃·奶白",
+          "材质": "ABS外壳铜水路",
+          "档位": "2",
+          "套装价": "144.00元",
+          "主体价": "104.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 2/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0601NBT-Cu"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 2/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-044",
+      "query": "最后一页",
+      "turns": [
+        "你们有哪些产品",
+        "最后一页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "not-parity"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 8,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "系列": "镀枪灰808方杆带灯冷热四档套装(铜芯)",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "套装价": "270.00元",
+          "主体价": "180.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 1/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0662GDT"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 13/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [
+        "产品型号"
+      ],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-045",
+      "query": "第99页",
+      "turns": [
+        "你们有哪些产品",
+        "第99页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "absolute",
+        "boundary"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "产品目录只有 13 页。"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "产品目录只有 13 页。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-046",
+      "query": "第3页",
+      "turns": [
+        "0653 的材质",
+        "第3页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "absolute",
+        "boundary"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653圆杆四档套装",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "出货地": "福建泉州",
+          "套装价": "208.00元",
+          "主体价": "156.00元"
+        },
+        "leaked": [],
+        "preview": "0653系列目前有 5 款："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "产品目录只有 1 页。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "产品型号",
+        "出货地",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-047",
+      "query": "上一页",
+      "turns": [
+        "你们有哪些产品",
+        "下一页",
+        "上一页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "round-trip"
+      ],
+      "required_fields": [
+        "产品型号"
+      ],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 8,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "系列": "镀枪灰808方杆带灯冷热四档套装(铜芯)",
+          "颜色": "灰玻璃·喷灰",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "套装价": "270.00元",
+          "主体价": "180.00元"
+        },
+        "leaked": [],
+        "preview": "已发布产品共 61 款，第 1/13 页（每页最多 5 款）："
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT"
+        },
+        "leaked": [],
+        "preview": "找到 61 款符合条件的产品，第 1/13 页："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-048",
+      "query": "下一页",
+      "turns": [
+        "0653 的材质",
+        "下一页"
+      ],
+      "is_multi_turn": true,
+      "can_view_cost": false,
+      "tags": [
+        "multi-turn",
+        "pagination",
+        "filtered"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "产品型号": "LY0653GDT",
+          "系列": "枪灰0653圆杆四档套装",
+          "描述": "钢琴四档数显氛围灯大置物套装花洒",
+          "材质": "ABS外壳铜水路",
+          "档位": "4",
+          "颜色": "灰玻璃·喷灰",
+          "出货地": "福建泉州",
+          "套装价": "208.00元",
+          "主体价": "156.00元"
+        },
+        "leaked": [],
+        "preview": "0653系列目前有 5 款："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "已经是产品目录的最后一页。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "主体价",
+        "产品型号",
+        "出货地",
+        "套装价",
+        "描述",
+        "材质",
+        "档位",
+        "系列",
+        "颜色"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-049",
+      "query": "第2页",
+      "turns": [
+        "第2页"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "pagination",
+        "absolute",
+        "no-context"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "可以帮您": ""
+        },
+        "leaked": [],
+        "preview": "您好，我是红财万富科技有限公司智能助手，可以帮您："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "可以帮您": ""
+        },
+        "leaked": [],
+        "preview": "您好，我是红财万富科技有限公司智能助手，可以帮您："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-050",
+      "query": "迟到不超过30分钟怎么计算",
+      "turns": [
+        "迟到不超过30分钟怎么计算"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "迟到不超过30分钟，按缺勤0.5小时核算，且迟到、早退以0.5小时为最小统计单位。迟到、早退时不得以加班加点时数冲抵。若因众所周知的不可抗因"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "迟到或早退不超过30分钟的，按缺勤0.5小时核算。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-051",
+      "query": "忘记打卡后几天内可以补卡",
+      "turns": [
+        "忘记打卡后几天内可以补卡"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "补充说明": "",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "忘记打卡后应在3天内发起“补卡”手续。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "注意事项": "补卡应遵循事实，如有作弊行为，将对申请人和签卡人各记小过1次；若上班迟到而故意不打卡、事后通过补卡逃避处罚，该班次以旷工处理。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "忘记打卡后应在3天内发起“补卡”手续。每人每月享有3次免责补卡机会，补卡审批通过后视为正常打卡。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "补充说明"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-052",
+      "query": "上班时间能不能玩手机戴耳机",
+      "turns": [
+        "上班时间能不能玩手机戴耳机"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "结论": "** 上班时间不得玩手机，不得戴耳机听音乐（特殊岗位除外）。",
+          "补充说明": "**",
+          "手机使用": "工作时间内不得玩手机。",
+          "耳机使用": "不得戴耳机听音乐，特殊岗位除外。",
+          "注意事项": "<未登记>",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "**结论：** 上班时间不得玩手机，不得戴耳机听音乐（特殊岗位除外）。"
+      },
+      "on": {
+        "sources": 1,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "上班时间原则上不允许玩手机，也不允许戴耳机听音乐，特殊岗位除外。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "手机使用",
+        "注意事项",
+        "结论",
+        "耳机使用",
+        "补充说明"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-053",
+      "query": "触碰红线造成损失一般赔偿多少",
+      "turns": [
+        "触碰红线造成损失一般赔偿多少"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "公司红线违规造成损失的，赔偿金额一般在1000~5000元之间；特别严重时可另行评估，公司并保留将责任人移送司法机关的权利。除赔偿损失外，还"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "赔偿标准如下": "",
+          "结论": "** 赔偿金额视损失严重程度确定，若无明文规定，一般在1000元至5000元之间；特别严重时可另行评估，公司并保留移送司法机关的权利。",
+          "必要细节": "**",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "公司红线违规造成损失的赔偿标准如下："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-054",
+      "query": "工伤假期间工资按什么标准计算",
+      "turns": [
+        "工伤假期间工资按什么标准计算"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "工伤假期间工资按公司所在城市最低工资标准核算。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "工伤假期间工资，按公司所在城市最低工资标准核算。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-055",
+      "query": "出差是怎么定义的",
+      "turns": [
+        "出差是怎么定义的"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 4,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "注意事项": "该定义仅界定“出差”本身；与出差相关的申请、审批及备案要求不在本条中，需另行按外出、出差规定执行。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "出差是指因工作需要，到公司常驻地以外区域工作超过1天的工作过程。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "出差是指因工作需要，到公司常驻地以外区域工作超过1天的工作过程。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "注意事项"
+      ],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-056",
+      "query": "造谣生事散播流言算不算红线",
+      "turns": [
+        "造谣生事散播流言算不算红线"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "policy",
+        "retrieval"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "结论": "属于。造谣生事、散播流言属于公司红线制度明确禁止的行为；情节严重影响恶劣的，可视为触及红线并解除劳动关系。",
+          "依据": "",
+          "禁止性规定": "严禁造谣生事、散播流言、传递负能量，诋毁公司或领导形象。",
+          "处理后果": "造谣生事、散播流言、传递负能量，诋毁公司或领导形象，且情节严重影响恶劣的，视为触及红线，予以解除劳动关系。",
+          "注意事项": "该行为是否导致解除劳动关系，需结合“情节严重影响恶劣”的认定；处理流程上，员工触及红线的，由部门/车间填写“奖惩单”，部门主管确认后，报人资部审核，由人力资源部呈报公司管理团队审批；管理层触及红线的，由人力资源部调查核实，报公司管理团队批准后处理。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "结论：属于。造谣生事、散播流言属于公司红线制度明确禁止的行为；情节严重影响恶劣的，可视为触及红线并解除劳动关系。"
+      },
+      "on": {
+        "sources": 5,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "结论": "属于。造谣生事、散播流言、传递负能量，诋毁公司或领导形象，被列为红线行为；情节严重影响恶劣的，视为触及红线，予以解除劳动关系。",
+          "依据": "该行为同时出现在员工红线管理制度的解除劳动关系情形和员工日常行为管理制度的行为红线中。",
+          "注意事项": "员工触及红线的，由部门/车间填写“奖惩单”，部门主管确认后，报人资部审核，由人力资源部呈报公司管理团队进行审批；管理层触及红线的，由人力资源部调查核实，报公司管理团队批准后处理。",
+          "引用依据": ""
+        },
+        "leaked": [],
+        "preview": "结论：属于。造谣生事、散播流言、传递负能量，诋毁公司或领导形象，被列为红线行为；情节严重影响恶劣的，视为触及红线，予以解除劳动关系。"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [
+        "处理后果",
+        "禁止性规定"
+      ],
+      "differing": [
+        "依据",
+        "注意事项",
+        "结论"
+      ],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-057",
+      "query": "客户催货怎么回复",
+      "turns": [
+        "客户催货怎么回复"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“交付延期”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“交付延期”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-058",
+      "query": "怎么跟客户解释涨价",
+      "turns": [
+        "怎么跟客户解释涨价"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "如可直接补充": "采购数量、当前报价或客户目标价。"
+        },
+        "leaked": [],
+        "preview": "这是“报价议价”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "如可直接补充": "采购数量、当前报价或客户目标价。"
+        },
+        "leaked": [],
+        "preview": "这是“报价议价”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-059",
+      "query": "客户说要换货",
+      "turns": [
+        "客户说要换货"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "例如可补充": "客户想退货、换货、维修，或需要先核实。"
+        },
+        "leaked": [],
+        "preview": "这是“售后投诉”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": "",
+          "例如可补充": "客户想退货、换货、维修，或需要先核实。"
+        },
+        "leaked": [],
+        "preview": "这是“售后投诉”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-060",
+      "query": "给客户写一句不生硬的回访消息",
+      "turns": [
+        "给客户写一句不生硬的回访消息"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“客户跟进”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“客户跟进”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-061",
+      "query": "帮我回复客户：订单还在生产，预计周五发出",
+      "turns": [
+        "帮我回复客户：订单还在生产，预计周五发出"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“交付延期”场景。为了生成合适的客户回复，还需要："
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {
+          "还需要": ""
+        },
+        "leaked": [],
+        "preview": "这是“交付延期”场景。为了生成合适的客户回复，还需要："
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    },
+    {
+      "case_id": "parity-062",
+      "query": "帮我写个回复",
+      "turns": [
+        "帮我写个回复"
+      ],
+      "is_multi_turn": false,
+      "can_view_cost": false,
+      "tags": [
+        "script",
+        "no-scenario"
+      ],
+      "required_fields": [],
+      "accepted_missing_in_on": [],
+      "shadow": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请问是要回复哪类客户情况，比如询价、议价、催货还是售后？"
+      },
+      "on": {
+        "sources": 0,
+        "refusal": false,
+        "denied": false,
+        "fields": {},
+        "leaked": [],
+        "preview": "请问是要回复哪类客户情况，比如询价、议价、催货还是售后？"
+      },
+      "missing_required_in_on": [],
+      "missing_in_on": [],
+      "differing": [],
+      "accepted_missing_observed": [],
+      "known_open_gap": false,
+      "matches": true,
+      "challenges": []
+    }
+  ],
+  "limitations": [
+    "退化判定以用例声明的 required_fields（员工实际问的字段）为基准，而不是以 shadow 输出了什么为基准：字段更少不代表更差。",
+    "字段取值已把「未登记」的各种措辞归一，避免把措辞差异算成退化。",
+    "accepted_missing 声明的字段缺失属于已确认的设计差异，单独统计。"
+  ]
+}
