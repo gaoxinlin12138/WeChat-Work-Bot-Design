@@ -65,6 +65,16 @@ class BusinessAgent(KnowledgeToolMixin, ProductToolMixin, MediaToolMixin, ReplyS
         self._knowledge_choices = SharedState(
             getattr(get_settings(), "redis_url", None), "wecom:knowledge-choices"
         )
+        # 待澄清槽位：澄清分支不执行任务，所以由它负责把已确定的信息留到下一轮。
+        from app.business.pending import STATE_ATTR
+
+        setattr(
+            self,
+            STATE_ATTR,
+            SharedState(
+                getattr(get_settings(), "redis_url", None), "wecom:pending-clarification"
+            ),
+        )
         # Internal domain boundaries. These are not model-facing tools or API
         # endpoints; they keep orchestration separate from domain work.
         self.tools = BusinessTools.for_owner(self)

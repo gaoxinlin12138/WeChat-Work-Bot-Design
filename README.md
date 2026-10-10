@@ -289,6 +289,15 @@ try {
 
 报告写入 `outputs/policy_pdf_eval_report.json`，检查真实已发布制度的 Top-5 文档、页码、内容和表格命中率，不调用答案生成模型，也不会写入聊天记录。
 
+切换产品查询 V2（`PRODUCT_QUERY_V2_MODE=on`）之前的两模式对照评测：
+
+```powershell
+$env:RUN_READONLY_DATABASE_EVAL=1
+.venv\Scripts\python.exe -m scripts.evaluate_mode_parity
+```
+
+同一批提问分别用 `shadow`（当前生产配置）和 `on` 跑一遍，按「员工实际问的字段」判断 `on` 是否漏答、是否越权、是否变成拒答。报告写入 `outputs/mode_parity_report.json`；有退化时以非零码退出。字段更少不算退化——少答与不问的字段无关的内容是正常行为。
+
 ## 备份与恢复
 
 执行备份：

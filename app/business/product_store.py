@@ -38,6 +38,11 @@ class ProductQueryResult:
     page_size: int
 
 
+# 统计类查询一次最多取回多少行。统计要把匹配项全部取回来算，所以不按展示分页来限；
+# 但仍设上限，避免库规模变大时把整库拉进内存。
+AGGREGATE_MAX_ROWS = 500
+
+
 _QUERY_COLUMNS = {
     "model": "model",
     "series": "series",
@@ -888,10 +893,17 @@ class ProductStoreMixin:
         order_parts.extend(("sequence_number NULLS LAST", "created_at", "id"))
         order_sql = ",".join(dict.fromkeys(order_parts))
 
-        page_size = max(
-            1,
-            min(10 if product_query.operation == "recommend" else 5, product_query.page_size),
-        )
+        # 分页上限是为了不把一大堆行刷给员工。但**统计类查询不返回行、只返回汇总**，
+        # 它需要把匹配项全部取回来才能算对（多少种颜色、平均价、最值），
+        # 所以这里对它单独放开。此前没放开的结果是：统计只覆盖了前 5 款，
+        # 「一共有多少种颜色」答成 2 种（实际 12 种）——错的比不答更糟。
+        if product_query.operation == "aggregate":
+            page_cap = AGGREGATE_MAX_ROWS
+        elif product_query.operation == "recommend":
+            page_cap = 10
+        else:
+            page_cap = 5
+        page_size = max(1, min(page_cap, product_query.page_size))
         page = max(1, product_query.page)
         if product_query.result_scope == "first":
             page = 1
@@ -918,6 +930,43 @@ class ProductStoreMixin:
             page=page,
             page_size=page_size,
         )
+
+    def product_text_field_values(self) -> dict[str, tuple[str, ...]]:
+        """已发布产品里各文本字段的**取值目录**。
+
+        为什么需要：员工给的是"值"（"镜面玻璃·镜面"），而计划层必须决定它属于哪一列。
+        模型没有取值概念，只能猜——实测同一个颜色被猜成 color、series、description 三种，
+        猜错就是 0 款。有了这份目录才能把值钉到正确的字段上，也才能把
+        "灰玻璃枪灰"这种漏打间隔号的写法归一到库里的标准写法。
+
+        只取文本字段、只在**已发布**产品上取，与产品查询同一口径；
+        取值总量在百级，可以整体缓存（见调用方的 TTL）。
+        """
+        columns = (
+            "color",
+            "material",
+            "series",
+            "product_description",
+            "special_function",
+            "shipping_origin",
+            "spray_modes",
+            "supplier",
+            "body_supplier",
+            "notes",
+        )
+        catalog: dict[str, tuple[str, ...]] = {}
+        with self._connect() as connection:
+            for column in columns:
+                rows = connection.execute(
+                    f"""SELECT {column} AS value, count(*) AS total
+                    FROM active_product_catalog
+                    WHERE {column} IS NOT NULL AND btrim({column}::text) <> ''
+                    GROUP BY {column}
+                    ORDER BY total DESC, {column}""",
+                ).fetchall()
+                field = "description" if column == "product_description" else column
+                catalog[field] = tuple(str(row["value"]) for row in rows)
+        return catalog
 
     def media_for_product(self, product_id: str):
         from app.business.store import BusinessResult

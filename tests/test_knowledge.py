@@ -295,13 +295,17 @@ def test_explicit_detection_report_query_never_falls_back_to_policy_rag(monkeypa
         def _state_pop(state, key):
             return state.pop(key, None)
 
-    monkeypatch.setattr(
-        "app.knowledge.service.get_knowledge_store", lambda: EmptyReportStore()
-    )
-    monkeypatch.setattr(
-        "app.business.service.get_rag_agent",
-        lambda: (_ for _ in ()).throw(AssertionError("不应回退到制度正文 RAG")),
-    )
+    class ReportOnlyAgent:
+        """只提供检测报告索引、没有正文 RAG 的知识 agent。"""
+
+        store = EmptyReportStore()
+
+        @staticmethod
+        def answer(*_args, **_kwargs):
+            # 守卫真正的回退动作：无论 store 从哪来，都不能走到制度正文 RAG。
+            raise AssertionError("不应回退到制度正文 RAG")
+
+    monkeypatch.setattr("app.business.service.get_rag_agent", lambda: ReportOnlyAgent())
     decision = IntentDecision(
         Intent.GENERAL,
         0.97,

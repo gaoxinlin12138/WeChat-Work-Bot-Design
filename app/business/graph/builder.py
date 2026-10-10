@@ -8,6 +8,7 @@ from typing import Literal
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 
+from app.business import pending
 from app.business.graph.reply_script import get_reply_script_graph
 from app.business.graph.state import (
     BusinessGraphContext,
@@ -27,7 +28,6 @@ from app.business.intent import (
     is_product_catalog_query,
 )
 from app.business.planner import PlannedTask, TaskPlan, plan_from_decision, plan_tasks
-from app.business.product_query import ambiguity_choice
 from app.business.product_selection import has_product_identifier
 from app.business.response_style import normalize_wecom_answer
 from app.business.tools.common import ReplySession, RoutedReply
@@ -67,28 +67,11 @@ def _product_context_decision(
     user_id: str,
     query: str,
     fallback: IntentDecision,
+    *,
+    model_available: bool = True,
 ) -> IntentDecision | None:
-    structured = (
-        agent._state_get(agent._product_query_context, user_id)
-        if getattr(agent._business_settings(), "product_query_v2_mode", "shadow") == "on"
-        else None
-    )
-    if (
-        isinstance(structured, dict)
-        and structured.get("pending_ambiguity")
-        and ambiguity_choice(query)
-        and not has_product_identifier(query)
-    ):
-        return replace(
-            fallback,
-            intent=Intent.PRODUCT,
-            needs_clarification=False,
-            clarification_question="",
-            query_for_search=query,
-            confidence=max(fallback.confidence, 0.99),
-            reason="正在回答上一轮产品查询的歧义选项",
-            source="product_query_context",
-        )
+    # 上一轮歧义的接回已统一由 pending 槽位在 create_plan 开头处理，
+    # 这里不再重复一套「读 V2 上下文的 pending_ambiguity」的分支。
     decision = agent._resume_product_choice(user_id, query, fallback)
     if decision is not None:
         return decision
@@ -103,7 +86,17 @@ def _product_context_decision(
             reason="继续查看上一轮产品目录",
             source="conversation_state",
         )
-    if is_product_catalog_query(query):
+    # 这里不再拦截 `is_product_catalog_query`——但**只在有模型判断时才放开**。
+    #
+    # 以前只要判定成「盘点产品」（有哪些产品、什么颜色、哪个便宜）就直接用确定性模板
+    # 建计划，模型根本不问。模板只认识写死的那几个词，而这类提问真正需要的是**内容理解**：
+    # 把「灰玻璃·枪灰颜色的产品有哪些」里的颜色取成筛选条件。模板做不到——它把颜色
+    # 当成「要显示的字段」，于是回了全库 61 款而不是该颜色的 19 款；而模型本来就会输出
+    # filters。
+    #
+    # 但无模型时模板仍是有价值的兜底（拿掉它会让无模型路径的清单类提问变差，
+    # 实测计划匹配率 96.1% → 94.7%），所以保留为**模型不可用时的降级路径**。
+    if not model_available and is_product_catalog_query(query):
         return replace(
             fallback,
             intent=Intent.PRODUCT,
@@ -111,7 +104,7 @@ def _product_context_decision(
             clarification_question="",
             query_for_search=query,
             confidence=max(fallback.confidence, 0.95),
-            reason="问题是在盘点当前产品，统一使用产品清单模板",
+            reason="问题是在盘点当前产品，统一使用产品清单模板（无模型时的兜底）",
             source="deterministic_product_template",
         )
     if (
@@ -286,6 +279,10 @@ def create_plan(
     user_id = runtime.context.user_id
     query = state["normalized_query"]
     settings = service.get_settings()
+    # 如果本句是在回答上一轮的澄清问题，直接用接回的计划，不再重新理解一遍。
+    resolved = pending.resolve(agent, user_id, query)
+    if resolved is not None:
+        return {"plan": plan_to_payload(resolved)}
     recent_context = agent._recent_intent_context(user_id)
     active_session = agent._state_get(agent._reply_sessions, user_id)
     if active_session is not None and not isinstance(active_session, ReplySession):
@@ -331,7 +328,10 @@ def create_plan(
         planner_context = recent_context
 
     fallback = fallback_intent_decision(query, planner_context)
-    contextual = _product_context_decision(agent, user_id, query, fallback)
+    planner_client = _planner_client(settings)
+    contextual = _product_context_decision(
+        agent, user_id, query, fallback, model_available=planner_client is not None
+    )
     if contextual is not None:
         plan = plan_from_decision(contextual, query)
     else:
@@ -347,7 +347,7 @@ def create_plan(
         plan = plan_tasks(
             query,
             recent_context=routing_context,
-            client=_planner_client(settings),
+            client=planner_client,
             model=getattr(settings, "llm_model", None),
             confidence_threshold=getattr(settings, "intent_confidence_threshold", 0.45),
             decision_resolver=service.decide_intent,
@@ -375,8 +375,14 @@ def choose_after_plan(state: BusinessGraphState) -> PlanRoute:
     return "clarification" if plan_from_payload(state["plan"]).needs_clarification else "execute"
 
 
-def clarification_node(state: BusinessGraphState) -> dict[str, object]:
+def clarification_node(
+    state: BusinessGraphState,
+    runtime: Runtime[BusinessGraphContext],
+) -> dict[str, object]:
     plan = plan_from_payload(state["plan"])
+    # 澄清分支不经过 execute_task，如果不在这里记录，本轮已解析出的型号和字段就丢了，
+    # 员工回答之后系统只会重新索要型号。
+    pending.remember(runtime.context.agent, runtime.context.user_id, plan)
     reply = RoutedReply(
         plan.primary_intent,
         plan.clarification_question or "为了避免答错，请补充你希望我优先完成的任务。",

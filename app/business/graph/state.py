@@ -9,6 +9,7 @@ from typing import Any, TypedDict
 from app.business.intent import Intent, IntentDecision, MediaAction, ReplyScenario
 from app.business.planner import PlannedTask, ProductFilter, ProductQuery, TaskPlan
 from app.business.product_query import (
+    ProductAggregate,
     ProductAmbiguity,
     ProductFieldRequest,
     ProductReference,
@@ -168,6 +169,21 @@ def plan_to_payload(plan: TaskPlan) -> TaskPlanPayload:
                             {"field": item.field, "direction": item.direction}
                             for item in task.product_query.sorts
                         ],
+                        # aggregate 曾经漏在这里：计划穿过图状态时聚合信息被丢掉，
+                        # 于是「一共有多少种颜色」到执行层变成了"缺少 aggregate"。
+                        # 这是同一份映射写了两遍的典型故障——tests/test_graph_state_roundtrip.py
+                        # 用「全字段往返相等」把它看住。
+                        "aggregate": (
+                            {
+                                "kind": task.product_query.aggregate.kind,
+                                "field": task.product_query.aggregate.field,
+                                "limit": task.product_query.aggregate.limit,
+                                "evidence": task.product_query.aggregate.evidence,
+                                "source": task.product_query.aggregate.source,
+                            }
+                            if task.product_query.aggregate is not None
+                            else None
+                        ),
                         "page": task.product_query.page,
                         "page_size": task.product_query.page_size,
                         "context_mode": task.product_query.context_mode,
@@ -251,6 +267,18 @@ def plan_from_payload(payload: TaskPlanPayload) -> TaskPlan:
             for raw in raw_query.get("ambiguities", [])
             if isinstance(raw, dict) and raw.get("question")
         )
+        raw_aggregate = raw_query.get("aggregate")
+        aggregate = None
+        if isinstance(raw_aggregate, dict) and raw_aggregate.get("field"):
+            aggregate_kind = str(raw_aggregate.get("kind") or "distinct_count")
+            if aggregate_kind in {"distinct_count", "max", "min", "average"}:
+                aggregate = ProductAggregate(
+                    kind=aggregate_kind,  # type: ignore[arg-type]
+                    field=str(raw_aggregate["field"]),
+                    limit=max(1, min(50, int(raw_aggregate.get("limit") or 30))),
+                    evidence=str(raw_aggregate.get("evidence") or ""),
+                    source=str(raw_aggregate.get("source") or "fallback"),  # type: ignore[arg-type]
+                )
         return PlannedTask(
             decision,
             ProductQuery(
@@ -266,6 +294,7 @@ def plan_from_payload(payload: TaskPlanPayload) -> TaskPlan:
                 requested_fields=requests,
                 result_scope=str(raw_query.get("result_scope") or "all_matches"),  # type: ignore[arg-type]
                 sorts=sorts,
+                aggregate=aggregate,
                 page=max(1, int(raw_query.get("page") or 1)),
                 page_size=max(1, int(raw_query.get("page_size") or 5)),
                 context_mode=str(raw_query.get("context_mode") or "independent"),  # type: ignore[arg-type]

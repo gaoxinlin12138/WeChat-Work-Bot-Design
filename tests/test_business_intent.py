@@ -203,13 +203,15 @@ def test_legacy_image_name_with_model_is_also_rejected(legacy_name: str) -> None
 
 
 def test_explicit_policy_question_uses_fast_path() -> None:
-    client = fake_client("不应调用模型")
+    """模型不可用时，明确的制度提问仍由规则快速路径正确判断。
 
-    decision = decide_intent("公司的迟到规定是什么？", client=client, model="deepseek-chat")
+    与 test_unambiguous_business_request_skips_model 同理：现在模型优先，
+    规则只在没有模型或模型失败时出手；但规则这条能力本身必须保留。
+    """
+    decision = decide_intent("公司的迟到规定是什么？", client=None, model=None)
 
     assert decision.intent == Intent.POLICY
     assert decision.source == "deterministic_fast_path"
-    assert client.chat.completions.calls == []
 
 
 @pytest.mark.parametrize(
@@ -225,14 +227,19 @@ def test_explicit_policy_question_uses_fast_path() -> None:
     ],
 )
 def test_unambiguous_business_request_skips_model(query, intent, media_action, media_role):
-    client = fake_client("不应调用模型")
-    decision = decide_intent(query, client=client, model="deepseek-chat")
+    """**模型不可用时**，明确的请求仍然由规则快速路径给出同样正确的判断。
+
+    这条以前断言的是「有模型也不许调用」——那是成本约定。现在改成**模型优先、规则兜底**：
+    规则只认识已经写进词表的说法，让它抢先决定会让员工换一种说法就静默答错，
+    所以内容理解交给模型。但规则本身的能力必须保留：一旦模型不可用（或调用失败），
+    下面这些判断仍然要成立。判据从「有没有调用模型」改为「没有模型时结果一样」。
+    """
+    decision = decide_intent(query, client=None, model=None)
 
     assert decision.intent == intent
     assert decision.source == "deterministic_fast_path"
     assert decision.media_action == media_action
     assert decision.media_role == media_role
-    assert client.chat.completions.calls == []
 
 
 @pytest.mark.parametrize(

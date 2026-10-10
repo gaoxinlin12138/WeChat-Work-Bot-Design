@@ -39,6 +39,13 @@ from app.config import get_settings
 router = APIRouter(prefix="/business", tags=["business"])
 logger = logging.getLogger(__name__)
 
+# 管理台问答归类允许的取值。提示词里已经写死这两个集合，但此前没有校验：
+# 模型返回「价格谈判」「愤怒」这类集合外的自由文本会被原样写入管理台数据，
+# 于是按场景筛选/统计时会静默漏掉这些行。这里把提示词的约束变成真正的枚举校验，
+# 越界时保留本地可解释的兜底值（quality_score 本来就做了区间夹取，属于同类处理）。
+CASE_SCENARIO_LABELS = ("产品咨询", "报价议价", "售后投诉", "交付延期", "客户跟进", "未分类")
+CASE_EMOTIONS = ("平和", "犹豫", "着急", "不满")
+
 
 def _classify_case(question: str, answer: str) -> dict[str, object]:
     """优先用 DeepSeek 归类；服务不可用时使用可解释的本地兜底。"""
@@ -84,11 +91,13 @@ def _classify_case(question: str, answer: str) -> dict[str, object]:
                 )
             )
             parsed = json.loads(response.choices[0].message.content or "{}")
-            if parsed.get("scenario"):
+            # 只接受集合内的取值；越界时保留上面本地算出的兜底值。
+            # 不校验的后果是自由文本直接落库，管理台按场景筛选会静默漏掉这些行。
+            if str(parsed.get("scenario") or "") in CASE_SCENARIO_LABELS:
                 scenario_label = str(parsed["scenario"])
             if parsed.get("intent"):
                 intent = str(parsed["intent"])
-            if parsed.get("emotion"):
+            if str(parsed.get("emotion") or "") in CASE_EMOTIONS:
                 emotion = str(parsed["emotion"])
             quality_score = max(0.0, min(1.0, float(parsed.get("quality_score", quality_score))))
         except Exception as exc:

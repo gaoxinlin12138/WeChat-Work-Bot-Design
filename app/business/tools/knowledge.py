@@ -19,11 +19,14 @@ class KnowledgeToolMixin:
         self, user_id: str, query: str, decision: IntentDecision
     ) -> RoutedReply | None:
         """Match detection-report metadata and expose the original PDF as a file source."""
-        from app.knowledge.service import get_knowledge_store
+        # Resolve through service at call time so the store is always the one the
+        # caller injected. Calling the knowledge factory directly here bypassed
+        # dependency injection and made offline evaluations read the real database.
+        from app.business import service
 
         explicit_report_query = self._is_detection_report_query(query)
         try:
-            store = get_knowledge_store()
+            store = service.get_rag_agent().store
         except RuntimeError:
             # Isolated evaluation environments intentionally disable the app
             # database and provide their own knowledge fixture.
@@ -31,13 +34,11 @@ class KnowledgeToolMixin:
         except Exception:
             # Knowledge metadata is optional for deployments that only expose
             # the business/product stores (including isolated unit tests).
-            if explicit_report_query:
-                return RoutedReply(
-                    decision.intent,
-                    "检测报告资料库暂时不可用，请稍后重试。",
-                    [],
-                )
-            return None
+            return (
+                RoutedReply(decision.intent, "检测报告资料库暂时不可用，请稍后重试。", [])
+                if explicit_report_query
+                else None
+            )
         choice_state = getattr(self, "_knowledge_choices", None)
         selected = re.fullmatch(r"(?:第\s*)?(\d+)(?:\s*(?:号|个|份))?", query.strip())
         choices = self._state_get(choice_state, user_id, []) if choice_state is not None else []
@@ -51,11 +52,11 @@ class KnowledgeToolMixin:
         if document is None:
             matcher = getattr(store, "match_detection_reports", None)
             if not callable(matcher):
-                return (
-                    RoutedReply(decision.intent, "检测报告资料库暂时不可用，请稍后重试。", [])
-                    if explicit_report_query
-                    else None
-                )
+                # The active knowledge store has no detection-report index (an
+                # offline fixture, for example). Fall through to normal retrieval
+                # rather than claiming the report library is unavailable: ordinary
+                # search can still find and cite the document.
+                return None
             try:
                 matches = matcher(query, limit=8)
             except Exception:

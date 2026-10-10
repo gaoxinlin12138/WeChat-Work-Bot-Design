@@ -10,6 +10,63 @@ from app.knowledge.store import Document
 from app.main import app
 
 
+def _classify_with_model(monkeypatch, payload: str) -> dict[str, object]:
+    """用桩模型驱动管理台归类，便于验证模型输出的边界校验。"""
+    completions = SimpleNamespace(
+        create=lambda **_kwargs: SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=payload))]
+        )
+    )
+    agent = SimpleNamespace(
+        _llm_client=lambda: SimpleNamespace(chat=SimpleNamespace(completions=completions))
+    )
+    monkeypatch.setattr(
+        business_router, "get_settings", lambda: SimpleNamespace(llm_api_key="k", llm_model="m")
+    )
+    monkeypatch.setattr(business_router, "get_rag_agent", lambda: agent)
+    return business_router._classify_case("客户嫌贵", "我帮您申请一下")
+
+
+def test_case_classification_rejects_out_of_set_model_values(monkeypatch) -> None:
+    """提示词限定了 scenario 与 emotion 的取值，代码必须真的按枚举校验。
+
+    此前模型返回「价格谈判」「愤怒」会被原样接受并写进管理台数据，
+    按场景筛选时会静默漏掉这些行。
+    """
+    result = _classify_with_model(
+        monkeypatch,
+        '{"scenario":"价格谈判","intent":"想砍价","emotion":"愤怒","quality_score":0.5}',
+    )
+
+    assert result["scenario"] in business_router.CASE_SCENARIO_LABELS
+    assert result["emotion"] in business_router.CASE_EMOTIONS
+    # 越界时保留本地可解释的兜底值，而不是自由文本
+    assert result["scenario"] == "报价议价"
+    assert result["emotion"] == "平和"
+
+
+def test_case_classification_accepts_in_set_model_values(monkeypatch) -> None:
+    result = _classify_with_model(
+        monkeypatch,
+        '{"scenario":"售后投诉","intent":"投诉处理","emotion":"犹豫","quality_score":0.4}',
+    )
+
+    assert result["scenario"] == "售后投诉"
+    assert result["emotion"] == "犹豫"
+    assert result["quality_score"] == 0.4
+
+
+def test_case_classification_keeps_valid_scenario_when_emotion_is_invalid(monkeypatch) -> None:
+    result = _classify_with_model(
+        monkeypatch,
+        '{"scenario":"售后投诉","emotion":"愤怒","quality_score":9.5}',
+    )
+
+    assert result["scenario"] == "售后投诉"
+    assert result["emotion"] == "平和"
+    assert result["quality_score"] == 1.0
+
+
 def test_admin_page_and_assets_are_available() -> None:
     client = TestClient(app)
 

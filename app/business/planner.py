@@ -21,6 +21,7 @@ from app.business.intent import (
 from app.business.product_query import (
     PRODUCT_FILTER_FIELDS,
     PRODUCT_QUERY_FIELDS,
+    ProductAggregate,
     ProductAmbiguity,
     ProductFieldRequest,
     ProductFilter,
@@ -29,6 +30,7 @@ from app.business.product_query import (
     ProductReference,
     ProductSort,
     detect_product_ambiguities,
+    detect_product_operation,
     fallback_field_requests,
     product_field_semantics_prompt,
 )
@@ -99,7 +101,14 @@ product_image/body_image/configuration_image/product_video/null。
 7. reply_scenario 只能为 product_inquiry、price_negotiation、
 after_sales_complaint、delivery_delay、customer_follow_up、unknown 或 null。
 8. product_query 和 product_media_query 必须提供 version=2 的 product_query：
-   - operation 只能为 detail、search、list、compare、recommend、media；
+   - operation 只能为 detail、search、list、compare、recommend、media、aggregate；
+   - 员工问的是"有多少种/几种、最贵最便宜、平均多少"这类**统计**，而不是"列出哪些"时，
+     operation=aggregate 并给出 aggregate：kind 为 distinct_count（去重计数，如"一共
+     有多少种颜色"）、max / min（最大最小，如"最贵的哪个"）、average（平均，如"平均
+     套装价多少"），field 为被统计的字段，evidence 为员工原话中的依据（如"颜色"）。
+     例："现在的产品里一共有多少种颜色" → operation=aggregate,
+     aggregate={"kind":"distinct_count","field":"color","evidence":"颜色","source":"current"}；
+     max/min/average 只能用于数值字段（set_price、body_price、cost_price、piece_count）；
    - references 只能引用员工当前明确说出的型号，或在省略表达中使用 context；
    - requested_fields 中 field 只能使用 model、series、description、material、
      spray_modes、color、special_function、shipping_origin、set_price、cost_price、
@@ -129,13 +138,17 @@ _TASK_PLANNER_PROMPT += (
 )
 
 _CLAUSE_SPLIT = re.compile(
-    r"[，,；;。]|然后|同时|顺便|另外|接着|并且|以及|"
+    r"[，,；;。]|然后|同时|顺便|另外|接着|并且|以及|还有|"
     r"(?:并|再)(?=帮我|给我|把|查|写|生成|发|看)"
 )
 _COMPOUND_MARKER = re.compile(
-    r"然后|同时|顺便|另外|接着|并且|以及|"
+    r"然后|同时|顺便|另外|接着|并且|以及|还有|"
     r"(?:并|再)(?:帮我|给我|把|查|写|生成|发|看)|先.+再"
 )
+# 普通并列连词。它们既可能连接两个不同领域的请求（「0689的价格和年假规定」），
+# 也可能只是同一句话里的并列成分（「价格和库存」「客户说价格太高和产品质量差」）。
+# 因此单独处理：见 _clause_decisions 里的准入条件。
+_CROSS_DOMAIN_CONJUNCTION = re.compile(r"和|与|及|、")
 
 
 def _deduplicated_strings(value: object, *, limit: int = 20) -> tuple[str, ...]:
@@ -150,10 +163,38 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         raise ValueError("产品任务缺少 product_query")
     default_operation = "media" if intent == Intent.PRODUCT_MEDIA else "detail"
     operation = str(value.get("operation") or default_operation)
-    if operation not in {"detail", "search", "list", "compare", "recommend", "media"}:
+    if operation not in {
+        "detail",
+        "search",
+        "list",
+        "compare",
+        "recommend",
+        "media",
+        "aggregate",
+    }:
         raise ValueError("产品任务 operation 不受支持")
     if intent == Intent.PRODUCT_MEDIA:
         operation = "media"
+
+    raw_aggregate = value.get("aggregate")
+    aggregate: ProductAggregate | None = None
+    if operation == "aggregate" or isinstance(raw_aggregate, dict):
+        if not isinstance(raw_aggregate, dict):
+            raise ValueError("聚合任务缺少 aggregate")
+        kind = str(raw_aggregate.get("kind") or "")
+        if kind not in {"distinct_count", "max", "min", "average"}:
+            raise ValueError("聚合类型不受支持")
+        aggregate_field = str(raw_aggregate.get("field") or "").strip()
+        if aggregate_field not in PRODUCT_QUERY_FIELDS:
+            raise ValueError("聚合字段不受支持")
+        aggregate = ProductAggregate(
+            kind=kind,  # type: ignore[arg-type]
+            field=aggregate_field,
+            limit=max(1, min(50, int(raw_aggregate.get("limit") or 30))),
+            evidence=str(raw_aggregate.get("evidence") or "").strip()[:200],
+            source=str(raw_aggregate.get("source") or "current"),  # type: ignore[arg-type]
+        )
+        operation = "aggregate"
 
     raw_references = value.get("references", [])
     if not isinstance(raw_references, list):
@@ -304,6 +345,7 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         requested_fields=tuple(requests),
         result_scope=result_scope,  # type: ignore[arg-type]
         sorts=tuple(sorts),
+        aggregate=aggregate,
         page=max(1, int(value.get("page") or 1)),
         page_size=max(1, min(10, int(value.get("page_size") or 5))),
         context_mode=context_mode,  # type: ignore[arg-type]
@@ -356,16 +398,23 @@ def _fallback_product_query(query: str, decision: IntentDecision) -> ProductQuer
     from app.business.intent import is_product_catalog_query
     from app.business.product_selection import product_identifier_tokens
 
+    included = tuple(product_identifier_tokens(query))
     operation: ProductOperation
     if decision.intent == Intent.PRODUCT_MEDIA:
         operation = "media"
-    elif any(marker in query for marker in ("推荐", "适合", "哪个好", "哪款好")):
-        operation = "recommend"
-    elif is_product_catalog_query(query):
-        operation = "list"
     else:
-        operation = "detail"
-    included = tuple(product_identifier_tokens(query))
+        explicit = detect_product_operation(query)
+        if explicit == "recommend" and not included:
+            # 没有型号的「推荐我一款」是面向整个产品库的浏览请求。规则路径无法构造
+            # 可信的排序查询，执行层会按不安全拒绝（on 模式）或索要型号（旧链路），
+            # 员工只能拿到死胡同。降级为清单浏览：结果差一些，但可执行、可继续。
+            operation = "list"
+        elif explicit is not None:
+            operation = explicit
+        elif is_product_catalog_query(query):
+            operation = "list"
+        else:
+            operation = "detail"
     requests = fallback_field_requests(query)
     fields = tuple(request.field for request in requests)
     filters: tuple[ProductFilter, ...] = ()
@@ -463,9 +512,13 @@ def _ground_product_query(product_query: ProductQuery, query: str) -> ProductQue
 def _clause_decisions(
     query: str, recent_context: list[dict[str, str]] | None
 ) -> list[IntentDecision]:
-    if not _COMPOUND_MARKER.search(query):
+    explicit = bool(_COMPOUND_MARKER.search(query))
+    # 没有显式并列标记时，才考虑普通并列连词；有显式标记就按既有规则切。
+    conjunction_only = not explicit and bool(_CROSS_DOMAIN_CONJUNCTION.search(query))
+    if not explicit and not conjunction_only:
         return []
-    clauses = [part.strip(" ，,；;。") for part in _CLAUSE_SPLIT.split(query) if part.strip()]
+    splitter = _CLAUSE_SPLIT if explicit else _CROSS_DOMAIN_CONJUNCTION
+    clauses = [part.strip(" ，,；;。") for part in splitter.split(query) if part.strip()]
     if len(clauses) < 2:
         return []
     decisions: list[IntentDecision] = []
@@ -476,6 +529,14 @@ def _clause_decisions(
         if decision.intent == Intent.GENERAL and len(clause) <= 8:
             continue
         decisions.append(decision)
+    if conjunction_only:
+        intents = {decision.intent for decision in decisions}
+        # 只用「和/与/及/、」时，必须确实分属两个不同的资料域才算两个请求：
+        # - 同域并列（「价格和库存」）本来就是一个请求；
+        # - 含话术任务（「客户说价格太高和产品质量差」）是同一段客户叙述，
+        #   按连词切开会把一句话拆成两个任务，反而答非所问。
+        if len(intents) < 2 or Intent.REPLY_SCRIPT in intents:
+            return []
     return decisions
 
 
@@ -692,12 +753,18 @@ def plan_tasks(
 
 def plan_from_decision(decision: IntentDecision, query: str) -> TaskPlan:
     """Wrap a validated contextual decision in the same execution contract."""
+    product_query = _fallback_product_query(query, decision)
+    # 计划自己带着未解决的歧义时必须澄清，否则执行层会替员工猜一个含义。
+    # 歧义原本只在 V2 执行层处理，这里提升到计划层，让规则路径与 V2 路径行为一致。
+    ambiguities = product_query.ambiguities if product_query is not None else ()
     return TaskPlan(
         goal=decision.query_for_search or query[:500],
-        tasks=(PlannedTask(decision, _fallback_product_query(query, decision)),),
+        tasks=(PlannedTask(decision, product_query),),
         confidence=decision.confidence,
         reason=decision.reason,
         source=decision.source,
-        needs_clarification=decision.needs_clarification,
-        clarification_question=decision.clarification_question,
+        needs_clarification=decision.needs_clarification or bool(ambiguities),
+        clarification_question=(
+            decision.clarification_question or (ambiguities[0].question if ambiguities else "")
+        ),
     )

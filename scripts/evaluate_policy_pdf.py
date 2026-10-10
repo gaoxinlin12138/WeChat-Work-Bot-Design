@@ -52,8 +52,9 @@ def result_matches(case: PolicyPdfCase, result: SearchResult) -> bool:
     )
 
 
-def evaluate(cases: list[PolicyPdfCase], *, limit: int) -> dict[str, Any]:
-    agent = get_rag_agent()
+def evaluate(cases: list[PolicyPdfCase], *, limit: int, agent: Any = None) -> dict[str, Any]:
+    if agent is None:
+        agent = get_rag_agent()
     details: list[dict[str, Any]] = []
     reciprocal_rank = 0.0
     table_cases = 0
@@ -121,8 +122,27 @@ def main() -> int:
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument(
+        "--read-only",
+        action="store_true",
+        help=(
+            "通过只读会话运行：不调用 initialize()、不写审计、数据库层只读。"
+            "检索质量与默认方式一致，但需要设置 RUN_READONLY_DATABASE_EVAL=1。"
+        ),
+    )
     args = parser.parse_args()
-    report = evaluate(load_cases(args.cases), limit=args.limit)
+    agent = None
+    if args.read_only:
+        from scripts.readonly_env import ReadOnlyBusiness
+
+        # with_embeddings 让向量检索用真实 embedding 配置，否则会退化为纯关键词检索。
+        agent = ReadOnlyBusiness(with_embeddings=True).knowledge
+    report = evaluate(load_cases(args.cases), limit=args.limit, agent=agent)
+    report["mode"] = (
+        "real_published_policy_retrieval_read_only"
+        if args.read_only
+        else "real_published_policy_retrieval"
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report["summary"], ensure_ascii=False))

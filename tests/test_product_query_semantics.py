@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.business import pending
 from app.business.graph.builder import _product_context_decision
 from app.business.graph.state import plan_from_payload, plan_to_payload
 from app.business.intent import Intent, IntentDecision
@@ -165,6 +166,11 @@ def test_shared_semantics_respect_scope_and_negation(phrase, expected):
     ],
 )
 def test_original_two_turns_then_clarification_choice(choice, expected):
+    """原报告的两次对话缺陷：澄清之后员工照答，必须被接住。
+
+    接回逻辑现在位于计划层的共享槽位（`app.business.pending`），不再是
+    V2 上下文里的 `pending_ambiguity`，所以第三步先经槽位解析、再执行。
+    """
     store = Catalog()
     agent = BusinessAgent(store)
     first = answer(agent, MODEL + "主体有哪些材料组成?", plan(evidence="组成"))
@@ -172,7 +178,12 @@ def test_original_two_turns_then_clarification_choice(choice, expected):
     second = answer(agent, MODEL + "套装材料?", plan(evidence="套装材料"))
     assert "你想了解产品主体的材质，还是套装包含的配件？" in second.content
     assert len(store.calls) == 1
-    third = answer(agent, choice, ProductQuery(context_mode="continuation"))
+
+    resolved = pending.resolve(agent, "employee-1", choice)
+    assert resolved is not None, "待澄清槽位没有接住员工的选项"
+    resolved_query = resolved.tasks[0].product_query
+    assert resolved_query is not None
+    third = answer(agent, choice, resolved_query)
     assert expected in third.content
     assert len(store.calls) == 2
     assert not agent._product_query_context["employee-1"].get("pending_ambiguity")
@@ -412,22 +423,30 @@ def test_shadow_never_delivers_v2_clarification_or_writes_formal_context(monkeyp
     assert len(store.calls) == 1
 
 
-def test_real_pending_choice_routes_synonyms_only_in_on_mode(monkeypatch):
+def test_pending_choice_is_resolved_by_the_shared_slot_in_every_mode(monkeypatch):
+    """澄清接回不再依赖 V2 模式。
+
+    旧实现把待澄清状态放在 V2 上下文里，于是只有 on 模式能接回；shadow 模式下
+    员工照答会被重新索要型号——这正是被报告的两次对话缺陷。现在槽位由交付的
+    计划层写入，两种模式都能接回。
+    """
     agent = BusinessAgent(Catalog())
-    answer(agent, MODEL + "套装材料", plan(evidence="套装材料"))
     fallback = IntentDecision(Intent.CONVERSATION, 0.5, "", "后者")
-    monkeypatch.setattr(
-        agent, "_business_settings", lambda: SimpleNamespace(product_query_v2_mode="on")
-    )
-    assert (
-        _product_context_decision(agent, "employee-1", "后者", fallback).source
-        == "product_query_context"
-    )
-    monkeypatch.setattr(
-        agent, "_business_settings", lambda: SimpleNamespace(product_query_v2_mode="shadow")
-    )
-    result = _product_context_decision(agent, "employee-1", "后者", fallback)
-    assert result is None or result.source != "product_query_context"
+    for mode in ("on", "shadow"):
+        monkeypatch.setattr(
+            agent,
+            "_business_settings",
+            lambda current=mode: SimpleNamespace(product_query_v2_mode=current),
+        )
+        # 每一轮都重新写入槽位，因为解析成功后会清空它。
+        answer(agent, MODEL + "套装材料", plan(evidence="套装材料"))
+        resolved = pending.resolve(agent, "employee-1", "后者")
+        assert resolved is not None, f"{mode} 模式下没有接住员工的选项"
+        assert resolved.tasks[0].product_query.fields == ("components",)
+
+    # 计划层的上下文判断不再自行处理待澄清，避免两套机制并存。
+    decided = _product_context_decision(agent, "employee-1", "后者", fallback)
+    assert decided is None or decided.source != "product_query_context"
 
 
 def test_unrecognized_question_with_empty_plan_cannot_become_overview():
@@ -523,3 +542,59 @@ def test_negated_set_material_does_not_trigger_ambiguity():
     )
     assert not result.ambiguities
     assert result.query.fields == ("set_price",)
+
+
+@pytest.mark.parametrize(
+    ("message", "field", "value"),
+    [
+        ("镜面玻璃·镜面 3 款是哪三款", "color", "镜面玻璃·镜面"),
+        ("灰玻璃·枪灰产品有哪些", "color", "灰玻璃·枪灰"),
+        ("全铜的有哪些", "material", "全铜"),
+    ],
+)
+def test_filter_value_quoted_from_the_message_is_enough_provenance(
+    message: str, field: str, value: str
+):
+    """筛选值被原话原样引用就是依据，不要求原话里再出现"颜色"这类字段词。
+
+    生产上「镜面玻璃·镜面 3 款是哪三款」被拒答（"这个查询条件无法安全执行"）：
+    员工承接上一轮的统计结果追问时不会重复说"颜色"，而校验只认字段语义片段。
+    值本来就在原话里，把它当作依据既不放松安全性，也不会误答。
+    """
+    query = ProductQuery(
+        operation="list",
+        filters=(
+            ProductFilter(field, "contains", value, value, "current"),
+        ),
+    )
+
+    result = validate_product_query(query, message, can_view_cost=False)
+
+    assert not result.errors
+    assert len(result.query.filters) == 1
+
+
+def test_a_value_the_employee_never_said_is_still_rejected():
+    """放宽不能过头：值不在原话里，照样拦下。"""
+    query = ProductQuery(
+        operation="list",
+        filters=(ProductFilter("color", "equals", "红色", "红色", "current"),),
+    )
+
+    result = validate_product_query(query, "镜面玻璃·镜面 3 款是哪三款", can_view_cost=False)
+
+    assert result.errors
+    assert not result.query.filters
+
+
+def test_a_filter_without_any_evidence_is_still_rejected():
+    """依据为空仍属残缺计划，不能靠"值恰好出现在原话里"过关。"""
+    query = ProductQuery(
+        operation="list",
+        filters=(ProductFilter("material", "contains", "ABS", ""),),
+    )
+
+    result = validate_product_query(query, MODEL + "材质包含ABS", can_view_cost=False)
+
+    assert result.errors
+    assert not result.query.filters

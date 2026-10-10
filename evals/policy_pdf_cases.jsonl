@@ -14,3 +14,10 @@
 {"case_id":"policy_pdf_014","query":"女性进入车间可以穿多高的高跟鞋","expected_title_keyword":"员工日常行为管理制度","expected_pages":[5],"expected_content_keywords":["6.5.4","3cm"]}
 {"case_id":"policy_pdf_015","query":"拜访客户应该提前几分钟到","expected_title_keyword":"员工日常行为管理制度","expected_pages":[8],"expected_content_keywords":["6.14.2","5分钟"]}
 {"case_id":"policy_pdf_016","query":"公司握手礼仪建议握多久","expected_title_keyword":"员工日常行为管理制度","expected_pages":[7],"expected_content_keywords":["6.10.1","3秒"]}
+{"case_id":"policy_pdf_017","query":"出差是怎么定义的","expected_title_keyword":"考勤管理制度","expected_pages":[3],"expected_content_keywords":["3.9","超过1天"]}
+{"case_id":"policy_pdf_018","query":"长假指多少天","expected_title_keyword":"考勤管理制度","expected_pages":[3],"expected_content_keywords":["3.10","大于等于7天"]}
+{"case_id":"policy_pdf_019","query":"打完上班卡躲岗休息会怎么处理","expected_title_keyword":"考勤管理制度","expected_pages":[4],"expected_content_keywords":["6.2.5","严重警告"]}
+{"case_id":"policy_pdf_020","query":"可以打听同事的工资待遇吗","expected_title_keyword":"员工日常行为管理制度","expected_pages":[4],"expected_content_keywords":["6.3.9","薪资待遇"]}
+{"case_id":"policy_pdf_021","query":"上班可以喝酒上岗吗","expected_title_keyword":"员工日常行为管理制度","expected_pages":[4],"expected_content_keywords":["6.3.2","酒后上岗"]}
+{"case_id":"policy_pdf_022","query":"造谣生事散播流言算不算红线","expected_title_keyword":"员工红线管理制度","expected_pages":[3],"expected_content_keywords":["6.1.5","造谣生事"]}
+{"case_id":"policy_pdf_023","query":"私自承接业务属于红线吗","expected_title_keyword":"员工红线管理制度","expected_pages":[4],"expected_content_keywords":["6.1.13","承接业务"]}
