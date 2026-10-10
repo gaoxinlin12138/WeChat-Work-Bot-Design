@@ -1,0 +1,85 @@
+{"case_id":"prod-detail-001","query":"LY0669GT 配件价格","tags":["product","detail","sensitive"],"label_note":"原标 fields=[components] 有误：实测回答是「你当前没有查看成本价和采购价的权限。套装价：144.00元」，即系统把「配件价格」判为配件采购价（敏感字段）而拒绝，属于权限决策而非漏答。已移除字段期望，其安全性由越权率覆盖。","expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"prod-detail-002","query":"0653价格多少","tags":["product","detail"],"expected":{"domain":"product","op":"detail","must_clarify":false,"fields":["set_price"]}}
+{"case_id":"prod-detail-003","query":"0689有哪些配件","tags":["product","detail"],"expected":{"domain":"product","op":"detail","must_clarify":false,"fields":["components"]}}
+{"case_id":"prod-detail-004","query":"LY0601GT-Cu 的材质和档位","tags":["product","detail"],"expected":{"domain":"product","op":"detail","must_clarify":false,"fields":["material","spray_modes"]}}
+{"case_id":"prod-detail-005","query":"查一下不存在的9999产品","tags":["product","detail","no-result"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"prod-detail-006","query":"LY0653GDT 套装价多少","tags":["product","detail"],"expected":{"domain":"product","op":"detail","must_clarify":false,"fields":["set_price"]}}
+{"case_id":"prod-cost-001","query":"LY0653GDT 成本价是多少","tags":["product","detail","sensitive"],"cost_visibility":"allowed","expected":{"domain":"product","op":"detail","must_clarify":false,"fields":["cost_price"]}}
+{"case_id":"prod-list-001","query":"铜体花洒有什么","tags":["product","list","defect"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-002","query":"我们的铜体花洒产品一共有几类","tags":["product","list","defect"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-003","query":"属于铜体花洒的产品有几类","tags":["product","list","defect"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-004","query":"我们现在有什么产品啊","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-005","query":"现在的产品有几个","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-006","query":"产品有什么","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-007","query":"哪些产品含有特殊功能","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-008","query":"除了822，我们现在还有其他产品吗？","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-list-009","query":"配件有吗，都是什么","tags":["product","detail"],"label_note":"原标 list 与既有设计冲突：tests/test_product_piece_count.py 明确要求「配件价格」等以配件开头的提问 is_product_catalog_query=False，走单产品字段查询。此处据设计改为 detail。","expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"prod-list-010","query":"你们一共多少个型号","tags":["product","list"],"expected":{"domain":"product","op":"list","must_clarify":false}}
+{"case_id":"prod-compare-001","query":"LY0653GDT 和 LY0689GT 哪个贵","tags":["product","compare"],"expected":{"domain":"product","op":"compare","must_clarify":false}}
+{"case_id":"prod-ambig-001","query":"LY0653套装材质","tags":["product","ambiguity"],"expected":{"domain":"product","op":"detail","must_clarify":true}}
+{"case_id":"prod-ambig-002","query":"套装材料是什么","tags":["product","ambiguity"],"expected":{"domain":"product","op":"detail","must_clarify":true}}
+{"case_id":"media-001","query":"发我产品视频","tags":["media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-002","query":"看图片","tags":["media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-003","query":"视频发下","tags":["media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-004","query":"产品图片发下","tags":["media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-005","query":"发我配置图","tags":["media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-006","query":"LY0686GT产品图","tags":["media"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"media-007","query":"LY0686GT主体图","tags":["media"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"policy-001","query":"公司的迟到规定是什么？","tags":["policy"],"expected":{"domain":"policy","op":null,"must_clarify":false}}
+{"case_id":"policy-002","query":"年假要提前几天申请","tags":["policy"],"expected":{"domain":"policy","op":null,"must_clarify":false}}
+{"case_id":"policy-003","query":"员工迟到了怎么办","tags":["policy"],"expected":{"domain":"policy","op":null,"must_clarify":false}}
+{"case_id":"policy-004","query":"向上申请，领导同意，就可以退货","tags":["policy","statement-form"],"expected":{"domain":"policy","op":null,"must_clarify":false}}
+{"case_id":"policy-005","query":"出差打车费怎么报销","tags":["policy"],"expected":{"domain":"policy","op":null,"must_clarify":false}}
+{"case_id":"general-001","query":"有没有公司的检测报告","tags":["general"],"expected":{"domain":"general","op":null,"must_clarify":false}}
+{"case_id":"general-002","query":"公司有哪些证书","tags":["general"],"expected":{"domain":"general","op":null,"must_clarify":false}}
+{"case_id":"general-003","query":"发我检测报告","tags":["general"],"expected":{"domain":"general","op":null,"must_clarify":false}}
+{"case_id":"script-001","query":"客户投诉产品质量","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"after_sales_complaint"}}
+{"case_id":"script-002","query":"客户想退货","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"after_sales_complaint"}}
+{"case_id":"script-003","query":"客户嫌价格高怎么回复？","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"price_negotiation"}}
+{"case_id":"script-004","query":"客户说要换货","tags":["script","defect"],"label_note":"域路由词表已含换货，场景本体曾漏掉，导致落 unknown。","expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"after_sales_complaint"}}
+{"case_id":"script-005","query":"客户催货怎么回复","tags":["script","defect"],"label_note":"场景本体曾只有「催客户」没有「催货」。","expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"delivery_delay"}}
+{"case_id":"script-006","query":"怎么跟客户解释涨价","tags":["script","defect"],"label_note":"议价词表曾缺「涨价」。","expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"price_negotiation"}}
+{"case_id":"script-007","query":"客户说产品漏水了","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"after_sales_complaint"}}
+{"case_id":"script-008","query":"客户已读不回怎么办","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"customer_follow_up"}}
+{"case_id":"script-009","query":"客户问什么时候发货","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"delivery_delay"}}
+{"case_id":"script-010","query":"客户问这个多少钱，我怎么回","tags":["script"],"expected":{"domain":"script","op":null,"must_clarify":false,"scenario":"product_inquiry"}}
+{"case_id":"conv-001","query":"你好","tags":["conversation"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"conv-002","query":"你是什么","tags":["conversation","defect"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"conv-003","query":"你能做什么","tags":["conversation"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"conv-004","query":"你调用的是什么模型","tags":["conversation","defect"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"conv-005","query":"今天天气怎么样","tags":["conversation","defect"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"conv-006","query":"中秋节吃什么呀、","tags":["conversation","defect"],"expected":{"domain":"conversation","op":null,"must_clarify":false}}
+{"case_id":"pend-001","query":"实物图","tags":["media","policy-pending"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"pend-002","query":"主图","tags":["media","policy-pending"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"pend-003","query":"LY0686GT实物图","tags":["media","policy-pending"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"pend-004","query":"LY0686GT主图","tags":["media","policy-pending"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-001","query":"那它的档位呢","turns":["LTA-822 材质","那它的档位呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-002","query":"它的材质呢","turns":["LTA-822 套装价","它的材质呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-003","query":"还有视频吗","turns":["LTA-822产品图","还有视频吗"],"tags":["multi-turn","media"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-004","query":"换成主体图","turns":["LTA-822 价格","换成主体图"],"tags":["multi-turn","media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-005","query":"那成本价呢","turns":["LTA-822 套装价","那成本价呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-006","query":"那颜色呢","turns":["LTA-822 材质","那颜色呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-007","query":"那主体价呢","turns":["LTA-822 套装价","那主体价呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-008","query":"成本价呢","turns":["LTA-822 套装价","成本价呢"],"tags":["multi-turn","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-009","query":"发给我","turns":["LTA-822产品图","发给我"],"tags":["multi-turn","media"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-010","query":"还有产品图吗","turns":["LTA-822主体图","还有产品图吗"],"tags":["multi-turn","media"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-011","query":"换成产品图","turns":["LTA-822 套装价","换成产品图"],"tags":["multi-turn","media","defect"],"expected":{"domain":"media","op":null,"must_clarify":false}}
+{"case_id":"mt-neg-001","query":"LY0653GDT 的材质","turns":["LTA-822 材质","LY0653GDT 的材质"],"tags":["multi-turn","negative","needs-real-data"],"label_note":"离线 fixture 的 search_products 忽略查询、对任何型号都返回 LTA-822，所以这条在离线环境只会测出 fixture 行为。改由只读真实库多轮评测判定。","expected":{"domain":"product","op":"detail","must_clarify":false,"must_not_contain":["全铝材质"]}}
+{"case_id":"mt-neg-002","query":"LY0689GT的视频","turns":["LTA-822产品图","LY0689GT的视频"],"tags":["multi-turn","negative","needs-real-data"],"expected":{"domain":"media","op":null,"must_clarify":false,"must_not_contain":["LTA-822"]}}
+{"case_id":"mt-neg-003","query":"0653价格多少","turns":["LTA-822 材质","0653价格多少"],"tags":["multi-turn","negative","needs-real-data"],"expected":{"domain":"product","op":"detail","must_clarify":false,"must_not_contain":["全铝材质","170.00"]}}
+{"case_id":"mt-neg-004","query":"换成LY0689GT","turns":["LTA-822 材质","换成LY0689GT"],"tags":["multi-turn","negative","needs-real-data"],"label_note":"放宽跟随判定后必须确认：带新型号的「换成X」不得沿用上一轮产品。","expected":{"domain":"product","op":"detail","must_clarify":false,"must_not_contain":["全铝材质","170.00"]}}
+{"case_id":"mt-neg-005","query":"换成主体图","turns":["LY0653GDT 材质","换成主体图"],"tags":["multi-turn","negative","needs-real-data"],"label_note":"换成媒体角色时应当沿用上一轮产品，因此不得出现别的主体的特征值。","expected":{"domain":"media","op":null,"must_clarify":false,"must_not_contain":["LTA-822"]}}
+{"case_id":"mt-clar-001","query":"材质","turns":["LTA-822 套装材质","材质"],"tags":["multi-turn","clarification","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-clar-002","query":"配件","turns":["LTA-822 套装材质","配件"],"tags":["multi-turn","clarification","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-clar-003","query":"前者","turns":["LTA-822 套装材质","前者"],"tags":["multi-turn","clarification","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-clar-004","query":"后者","turns":["LTA-822 套装材质","后者"],"tags":["multi-turn","clarification","product"],"expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"mt-clar-005","query":"年假要提前几天申请","turns":["LTA-822 套装材质","年假要提前几天申请"],"tags":["multi-turn","clarification","negative","policy"],"label_note":"待澄清槽位不得污染新话题：换到制度提问时不能带上上一轮的产品特征值。","expected":{"domain":"policy","op":null,"must_clarify":false,"must_not_contain":["全铝材质"]}}
+{"case_id":"prod-wide-001","query":"帮我推荐一款适合家用的花洒","tags":["product","recommend","dead-end"],"label_note":"推荐类提问没有型号也应给出结果或可回答的追问，不能只回“请先提供型号”。","expected":{"domain":"product","op":"recommend","must_clarify":false,"must_answer":true}}
+{"case_id":"prod-wide-002","query":"有没有便宜点的花洒","tags":["product","list","dead-end"],"label_note":"全库价格筛选提问没有型号也应给出结果或可回答的追问。","expected":{"domain":"product","op":"list","must_clarify":false,"must_answer":true}}
+{"case_id":"prod-wide-003","query":"你们有哪些系列","tags":["product","list","dead-end"],"label_note":"全库盘点类提问不应落到死胡同。","expected":{"domain":"product","op":"list","must_clarify":false,"must_answer":true}}
+{"case_id":"cross-001","query":"0689 的价格和年假规定","tags":["cross-domain","compound"],"label_note":"用「和」连接两个不同领域的问题，两个都必须进计划；此前只答产品那半。","expected":{"domain":"policy","op":null,"must_clarify":false,"must_include_domains":["product","policy"]}}
+{"case_id":"cross-002","query":"迟到规定和 LTA-822 的材质","tags":["cross-domain","compound"],"expected":{"domain":"product","op":"detail","must_clarify":false,"must_include_domains":["policy","product"]}}
+{"case_id":"cross-003","query":"产品图片和考勤制度","tags":["cross-domain","compound"],"expected":{"domain":"policy","op":null,"must_clarify":false,"must_include_domains":["media","policy"]}}
+{"case_id":"cross-004","query":"帮我查 0689 的配件，还有请假流程","tags":["cross-domain","compound"],"label_note":"「还有」此前不在复合句标记里。","expected":{"domain":"policy","op":null,"must_clarify":false,"must_include_domains":["product","policy"]}}
+{"case_id":"cross-005","query":"LY0653GDT 的价格和库存","tags":["cross-domain","same-domain"],"label_note":"同域并列是一个请求，不得被拆成两个任务。","expected":{"domain":"product","op":"detail","must_clarify":false}}
+{"case_id":"cross-006","query":"客户说价格太高和产品质量差","tags":["cross-domain","single-narrative"],"label_note":"同一段客户叙述含「和」时不得按连词拆开。","expected":{"domain":"script","op":null,"must_clarify":false}}
