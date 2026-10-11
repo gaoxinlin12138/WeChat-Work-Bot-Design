@@ -276,6 +276,12 @@ PRODUCT_OVERVIEW_FILLER_WORDS = (
     "帮我",
     "给我",
     "提供",
+    # 产品资料助手常见的交付动词；它们不指定字段，但明确要求把资料发来。
+    # 例如「发我 LTA-822 的详细信息」不能因为没有显式字段而被误判为澄清。
+    "发我",
+    "发给我",
+    "发送",
+    "给我发",
     "一下",
     "请",
     # 指代与主体
@@ -718,6 +724,21 @@ def preparse_product_query(message: str) -> ProductQuery:
         )
     if operation is None and re.search(r"(?:列出|有哪些|哪几款|哪些产品)", message):
         operation = "list"
+    # Entity counts do not have a field/value predicate.  The broad text
+    # pre-parser can otherwise mistake the tail of “有几种产品” for a
+    # special_function value and make a valid count unsafe.
+    if operation == "count" and aggregate is None:
+        # Keep real predicates such as “100 到 200 元内有多少产品”; only drop
+        # the false special_function match produced by the broad text parser.
+        filters = tuple(
+            item
+            for item in filters
+            if not (
+                item.field == "special_function"
+                and isinstance(item.value, str)
+                and "产品" in item.value
+            )
+        )
     return ProductQuery(
         operation=operation or "detail",
         include_models=tuple(item.value for item in references),

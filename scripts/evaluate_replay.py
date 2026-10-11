@@ -39,8 +39,7 @@ def main() -> int:
 
     if not args.corpus.exists():
         raise SystemExit(
-            f"语料不存在：{args.corpus}\n"
-            "请先运行 python -m scripts.export_audit_queries"
+            f"语料不存在：{args.corpus}\n请先运行 python -m scripts.export_audit_queries"
         )
 
     corpus = [
@@ -95,7 +94,10 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "corpus": str(args.corpus.relative_to(ROOT)),
+        # argparse accepts both repository-relative and absolute paths.  Resolve
+        # before relative_to so a real audit replay does not fail after all
+        # queries have already been evaluated.
+        "corpus": str(args.corpus.resolve().relative_to(ROOT)),
         "mode": "rules-only-offline",
         "limitations": [
             "回放使用进程内 fixture 资料（1 个产品、4 份资料），衡量的是理解与路由层，"
@@ -127,9 +129,7 @@ def main() -> int:
         "results": results,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     summary = report["summary"]
     total = int(summary["total"])
@@ -158,10 +158,7 @@ def main() -> int:
         f"  省略式追问、语料缺对话上下文："
         f"{summary['zero_source_needs_context']:>3}  ← 无法用本语料判定"
     )
-    print(
-        f"  自足提问、属于理解/路由问题："
-        f"{summary['zero_source_standalone']:>3}"
-    )
+    print(f"  自足提问、属于理解/路由问题：{summary['zero_source_standalone']:>3}")
     print(
         f"  → 自足提问共 {summary['standalone_total']} 条，其中零来源 "
         f"{summary['zero_source_standalone']} 条"

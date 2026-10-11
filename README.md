@@ -21,7 +21,8 @@
 企业微信员工
   ↕ 官方 WebSocket 长连接
 机器人进程：app.wecom.long_connection
-  ├─ 目标理解、任务规划与多轮会话
+  ├─ LangGraph 主链：规划 → 执行 → 校验 → 统一回答
+  ├─ QueryPlan 计划契约 → 既有 V2 执行器
   ├─ PostgreSQL 17 + pgvector 0.8.1
   ├─ Redis 共享会话
   ├─ DeepSeek：复杂任务规划与答案归纳
@@ -90,6 +91,9 @@ EMBEDDING_DIMENSIONS=1024
 # 复杂请求使用模型生成结构化计划；关闭后仍保留规则计划
 TASK_PLANNER_ENABLED=true
 
+# 产品/媒体生产计划阶段启用统一 QueryPlan；关闭可安全回退到原 V2 计划
+UNIFIED_QUERY_PLAN_ENABLED=true
+
 # LangGraph 是唯一业务编排器；checkpoint 可按环境独立启用
 LANGGRAPH_CHECKPOINT_ENABLED=false
 LANGGRAPH_CHECKPOINT_POOL_SIZE=4
@@ -106,9 +110,10 @@ LANGGRAPH_CHECKPOINT_POOL_SIZE=4
 这些既有领域能力中规划任务，不能规划发布、修改或删除操作。执行结果先检查来源、权限和完整性，
 再合并成最终回复；模型计划解析失败时自动降级为规则计划。
 
-产品查询现在统一使用 V2 结构化链路：模型只负责提出结构化查询计划，Python 负责字段本体、
-证据校验、权限判断、参数化 SQL 和结果渲染。旧的 legacy、shadow、off 并行链路已经删除，
-不再存在两套产品答案之间的运行时切换。
+产品查询现在统一使用“QueryPlan 审查 + V2 执行器”链路：模型/规则先提出 ProductQuery，
+生产阶段转换为统一 QueryPlan，完成字段、证据、权限和形状校验后，再桥接回现有 V2 执行器。
+旧的 legacy、shadow、off 产品分支已经删除，不存在两套线上答案；QueryPlan 只负责生产计划契约、
+审计和回放，ProductQuery/product_store 仍是唯一实际产品执行器。
 `LANGGRAPH_CHECKPOINT_ENABLED=true` 会在 PostgreSQL 中初始化 LangGraph checkpoint 表，必须在
 数据库备份和隔离环境验证完成后单独开启。企业微信 `msgid` 会作为幂等请求标识，thread id 按企业、
 机器人和会话隔离并哈希保存。
@@ -294,7 +299,7 @@ try {
 
 报告写入 `outputs/policy_pdf_eval_report.json`，检查真实已发布制度的 Top-5 文档、页码、内容和表格命中率，不调用答案生成模型，也不会写入聊天记录。
 
-产品查询验收统一运行 V2 结构化链路：
+产品查询验收统一运行“QueryPlan 审查 + V2 执行器”链路：
 
 ```powershell
 $env:RUN_READONLY_DATABASE_EVAL=1
@@ -302,7 +307,7 @@ $env:RUN_READONLY_DATABASE_EVAL=1
 .venv\Scripts\python.exe -m scripts.evaluate_context_inheritance
 ```
 
-这两项分别检查字段完整性、敏感字段越权和多轮上下文越界；不再运行旧链路与 V2 的并行对照。
+这两项分别检查字段完整性、敏感字段越权和多轮上下文越界；离线回放脚本只用于评估，不会成为第二条线上回答链路。
 
 ## 备份与恢复
 
@@ -340,4 +345,7 @@ $env:RUN_READONLY_DATABASE_EVAL=1
 
 ## 项目文档
 
-- [上线部署指南](上线部署指南.md)：生产环境准备、验收、备份与恢复细则。
+- [业务资料助手架构与工程说明](docs/业务资料助手-架构与工程说明.md)：生产链路、LangGraph、QueryPlan、查询形状、治理、评测和完整文件结构。
+- [部署与运维指南](docs/部署与运维指南.md)：生产环境准备、验收、备份与恢复细则。
+- [产品说明](docs/产品说明.md)：产品目标、用户、能力边界和设计原则。
+- [界面设计系统](docs/界面设计系统.md)：管理台视觉、布局和组件规范。

@@ -41,6 +41,12 @@ from app.business.product_query import (
 )
 from app.business.product_selection import has_product_identifier
 from app.business.query_governance import OutputPolicy, enforce_output_budget
+from app.business.query_plan import (
+    PermissionContext,
+    product_query_from_plan,
+    query_plan_from_product_query,
+    review_query_plan,
+)
 from app.business.response_style import normalize_wecom_answer
 from app.business.tools.common import ReplySession, RoutedReply
 from app.business.tools.reply_script import _NEW_TASK_MARKERS, extract_reply_fields
@@ -154,9 +160,7 @@ def _ordinal_detail_follow_up_plan(query: str, product_context: object) -> TaskP
     )
 
 
-def _count_listing_follow_up_plan(
-    query: str, product_context: object
-) -> TaskPlan | None:
+def _count_listing_follow_up_plan(query: str, product_context: object) -> TaskPlan | None:
     """Turn an ellipsis after a product count into the matching product list."""
     if isinstance(product_context, ProductFocus):
         focus = product_context
@@ -166,8 +170,10 @@ def _count_listing_follow_up_plan(
             not focus.result_ids and not focus.result_models and focus.query_plan is None
         ):
             focus = focus_from_legacy(product_context)
-    if focus is None or not focus.is_valid() or not any(
-        marker in query for marker in _COUNT_LISTING_FOLLOW_UP_MARKERS
+    if (
+        focus is None
+        or not focus.is_valid()
+        or not any(marker in query for marker in _COUNT_LISTING_FOLLOW_UP_MARKERS)
     ):
         return None
     saved_query = product_query_from_dict(focus.query_plan)
@@ -440,6 +446,61 @@ def _prefetch_embedding(plan: TaskPlan, query: str, runtime: Runtime[BusinessGra
         )
 
 
+def _apply_unified_query_plan(
+    plan: TaskPlan,
+    *,
+    message: str,
+    user_id: str,
+    can_view_sensitive: bool,
+    enabled: bool,
+) -> TaskPlan:
+    """Validate product tasks through QueryPlan before the V2 executor.
+
+    ProductQuery remains the sole executor. The adapter only makes the
+    reviewed unified contract authoritative and preserves trusted graph-only
+    metadata when it bridges back to ProductQuery. A failed review leaves the
+    original V2 task untouched as a safe rollback path.
+    """
+    if not enabled:
+        return plan
+    permission = PermissionContext(
+        user_id,
+        frozenset({"product.cost.read"}) if can_view_sensitive else frozenset(),
+    )
+    tasks: list[PlannedTask] = []
+    changed = False
+    for task in plan.tasks:
+        if task.product_query is None or task.decision.intent not in {
+            Intent.PRODUCT,
+            Intent.PRODUCT_MEDIA,
+        }:
+            tasks.append(task)
+            continue
+        structured = query_plan_from_product_query(
+            task.product_query,
+            domain="media" if task.decision.intent == Intent.PRODUCT_MEDIA else "product",
+        )
+        review = review_query_plan(structured, message, permission=permission)
+        if not review.passed:
+            tasks.append(task)
+            continue
+        reviewed = review.corrected_plan or structured
+        bridged, validation = product_query_from_plan(
+            reviewed,
+            message,
+            can_view_sensitive=can_view_sensitive,
+            base_query=task.product_query,
+        )
+        if bridged is None or not validation.passed:
+            tasks.append(task)
+            continue
+        tasks.append(replace(task, product_query=bridged))
+        changed = changed or bridged != task.product_query
+    if not changed:
+        return plan
+    return replace(plan, tasks=tuple(tasks))
+
+
 def create_plan(
     state: BusinessGraphState,
     runtime: Runtime[BusinessGraphContext],
@@ -537,6 +598,13 @@ def create_plan(
         active_session=active_session,
     )
     plan = _apply_media_context(plan, agent=agent, user_id=user_id, query=query)
+    plan = _apply_unified_query_plan(
+        plan,
+        message=query,
+        user_id=user_id,
+        can_view_sensitive=runtime.context.can_view_cost,
+        enabled=getattr(settings, "unified_query_plan_enabled", True),
+    )
 
     intents = {task.decision.intent for task in plan.tasks}
     if not intents.intersection({Intent.PRODUCT, Intent.PRODUCT_MEDIA}) and intents.intersection(
@@ -797,6 +865,28 @@ def finalize_reply(
         "truncated": truncated,
         "truncation_reason": truncation_reason,
     }
+    # Keep the canonical contract and review in the trace. The established
+    # ProductQuery executor remains the source of truth; no model output is sent
+    # directly to a tool.
+    unified_plans = []
+    unified_reviews = []
+    for task in plan.tasks:
+        if task.product_query is None:
+            continue
+        structured = query_plan_from_product_query(task.product_query)
+        review = review_query_plan(
+            structured,
+            state["normalized_query"],
+            permission=PermissionContext(
+                runtime.context.user_id,
+                frozenset({"product.cost.read"}) if runtime.context.can_view_cost else frozenset(),
+            ),
+        )
+        unified_plans.append(structured.to_dict())
+        unified_reviews.append(review.to_dict())
+    if unified_plans:
+        execution_trace["unified_query_plans"] = unified_plans
+        execution_trace["query_plan_reviews"] = unified_reviews
     reply = replace(
         base_reply,
         content=bounded_content,

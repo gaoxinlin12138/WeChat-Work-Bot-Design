@@ -24,6 +24,10 @@ outputs/replay_report.json
 outputs/product_field_eval_*.json
 outputs/mode_parity_report.json
 outputs/backups/
+# QueryPlan/replay reports are generated local evidence, not source artifacts.
+outputs/query-shadow-*.json
+outputs/query-plan-readonly-report-*.json
+outputs/replay_report-*.json
 # 真实员工提问的回放语料；可随时由 scripts/export_audit_queries.py 重新导出，不要提交。
 tmp/audit-export/
 tmp/replay_baseline.json

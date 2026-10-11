@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     rag_history_messages: int = Field(default=6, ge=0, le=50)
     rag_max_context_chars: int = Field(default=12000, ge=100, le=100000)
     task_planner_enabled: bool = True
+    # Enforce the unified contract before the established ProductQuery
+    # executor. Set UNIFIED_QUERY_PLAN_ENABLED=false for an emergency rollback.
+    unified_query_plan_enabled: bool = True
     intent_confidence_threshold: float = Field(default=0.45, ge=0.0, le=1.0)
     # Product queries use the validated V2 pipeline exclusively.  The former
     # legacy/shadow switch was removed after the V2 cutover.
