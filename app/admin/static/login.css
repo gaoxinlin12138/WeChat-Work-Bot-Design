@@ -1,0 +1,293 @@
+/* 管理员登录页。沿用管理台的浅蓝白画布与钴蓝主操作，独立于控制台样式表。 */
+
+@font-face {
+  font-family: "Noto Sans SC Display";
+  src: url("/admin-static/fonts/NotoSansSC-Display.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500 900;
+  font-display: swap;
+}
+
+:root {
+  --ink: #13233f;
+  --ink-soft: #52627a;
+  --paper: #f3f7ff;
+  --panel: #ffffff;
+  --line: #dce6f4;
+  --line-strong: #bfd0e6;
+  --muted: #667892;
+  --blue: #1769e8;
+  --blue-deep: #0f56c6;
+  --mint: #0b836f;
+  --danger: #b63243;
+  --danger-pale: #fff0f2;
+  --shadow: 0 18px 48px rgba(19, 35, 63, 0.1);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px;
+  background:
+    radial-gradient(1100px 520px at 10% -12%, #e2edff 0%, rgba(226, 237, 255, 0) 62%),
+    radial-gradient(760px 420px at 98% 110%, #e6f6f1 0%, rgba(230, 246, 241, 0) 58%),
+    var(--paper);
+  color: var(--ink);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #2f7af8;
+  outline-offset: 2px;
+}
+
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(370px, 0.88fr);
+  gap: 26px;
+  align-items: stretch;
+  width: min(1020px, 100%);
+}
+
+/* ---------------------------------------------------------------- 左：品牌与定位 */
+
+.login-intro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+  padding: 42px 40px 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(158deg, #ffffff 0%, #f7fbff 52%, #eef5ff 100%);
+}
+
+.login-intro::after {
+  content: "";
+  position: absolute;
+  top: -86px;
+  right: -96px;
+  width: 306px;
+  height: 306px;
+  border: 1px solid rgba(23, 105, 232, 0.16);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 28px rgba(23, 105, 232, 0.045);
+  pointer-events: none;
+}
+
+.intro-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: linear-gradient(150deg, #1769e8, #0f56c6);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(23, 105, 232, 0.28);
+}
+
+.intro-mark svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.login-intro h1 {
+  margin: 4px 0 0;
+  font-family: "Noto Sans SC Display", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.login-intro > p {
+  max-width: 34em;
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.intro-points {
+  display: grid;
+  gap: 9px;
+  padding: 0;
+  margin: auto 0 0;
+  list-style: none;
+}
+
+.intro-points li {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.intro-points b {
+  color: var(--blue-deep);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.intro-points span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.intro-foot {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* ---------------------------------------------------------------- 右：登录表单 */
+
+.login-panel {
+  display: grid;
+  align-items: center;
+  padding: 34px 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.login-form {
+  display: grid;
+  gap: 15px;
+}
+
+.login-form header h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.login-form header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login-error {
+  padding: 10px 12px;
+  margin: 0;
+  border: 1px solid #f0c8ce;
+  border-radius: 10px;
+  background: var(--danger-pale);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.login-error[hidden] {
+  display: none;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field input {
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field input:focus {
+  border-color: var(--blue);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 105, 232, 0.14);
+}
+
+.login-form button[type="submit"] {
+  height: 46px;
+  margin-top: 3px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(140deg, #1769e8, #0f56c6);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 10px 22px rgba(23, 105, 232, 0.26);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.login-form button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(23, 105, 232, 0.3);
+}
+
+.login-form button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+.login-note {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.login-note code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #eef4ff;
+  color: var(--blue-deep);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  body {
+    padding: 20px;
+  }
+
+  .login-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login-intro {
+    padding: 30px 26px;
+  }
+
+  .intro-points {
+    margin-top: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-form button[type="submit"] {
+    transition: none;
+  }
+}

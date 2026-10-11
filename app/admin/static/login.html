@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3f7ff">
+  <meta name="robots" content="noindex,nofollow">
+  <title>管理员登录 · 知识运营中枢</title>
+  <link rel="stylesheet" href="/admin-static/login.css?v=2026101202">
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-intro">
+      <span class="intro-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M4.2 8.5c2.1-3.7 6.5-5.4 10.5-4.1 4 1.3 6.5 5.3 5.9 9.5M19.8 15.5c-2.1 3.7-6.5 5.4-10.5 4.1-4-1.3-6.5-5.3-5.9-9.5"/><path d="m3.5 6.6.7 1.9 2-.6M20.5 17.4l-.7-1.9-2 .6"/></svg>
+      </span>
+      <h1>知识运营中枢</h1>
+      <p>企业微信智能体的资料工作台。维护制度、产品、客户话术与媒体，并检查员工的真实回答链路。</p>
+      <ul class="intro-points">
+        <li><b>可信优先</b><span>只有已发布内容参与员工问答</span></li>
+        <li><b>权限受控</b><span>成本价与采购价按部门字段鉴权</span></li>
+        <li><b>证据可核对</b><span>制度引用保留条款与 PDF 页码</span></li>
+      </ul>
+      <small class="intro-foot">LOCAL WORKSPACE · 仅限本机或受控内网访问</small>
+    </section>
+
+    <section class="login-panel">
+      <form class="login-form" method="post" action="/admin/login">
+        <header>
+          <h2>管理员登录</h2>
+          <p>使用本机配置的管理密钥进入控制台</p>
+        </header>
+        <p class="login-error" id="login-error" role="alert" hidden></p>
+        <label class="field">
+          <span>账号</span>
+          <input name="username" type="text" placeholder="请输入账号" autocomplete="username"
+                 required maxlength="100" autofocus spellcheck="false">
+        </label>
+        <label class="field">
+          <span>密码</span>
+          <input name="password" type="password" placeholder="请输入密码"
+                 autocomplete="current-password" required maxlength="500">
+        </label>
+        <input type="hidden" name="next" id="login-next" value="/admin">
+        <button type="submit">登录控制台</button>
+        <p class="login-note">仅限授权人员使用；如需访问凭据，请联系系统管理员。</p>
+      </form>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const messages = {
+        credentials: '账号或密码不正确，请重新输入。',
+        unconfigured: '登录服务尚未完成初始化，请联系系统管理员。',
+        origin: '请求来源校验未通过，请从管理台地址重新登录。'
+      };
+      const key = params.get('error');
+      if (key && messages[key]) {
+        const box = document.getElementById('login-error');
+        box.textContent = messages[key];
+        box.hidden = false;
+      }
+      const next = params.get('next');
+      if (next && next.startsWith('/') && !next.startsWith('//')) {
+        document.getElementById('login-next').value = next;
+      }
+    })();
+  </script>
+</body>
+</html>
