@@ -2405,3 +2405,9 @@ nav button {
   min-height: 38px;
   font-size: 14px;
 }
+
+/* 会话登录后的退出入口，紧跟在“开发接口文档”下方单独成行。 */
+.logout-link {
+  display: block;
+  padding-top: 0;
+}

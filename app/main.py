@@ -1,18 +1,16 @@
 import asyncio
-import base64
-import binascii
-import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
-from urllib.parse import urlparse
+from urllib.parse import quote
 
 import psycopg
 import redis
 import structlog
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.admin import auth as admin_auth
 from app.admin.router import STATIC_DIR
 from app.admin.router import router as admin_router
 from app.business.media_files import delete_uploaded_media_files
@@ -145,49 +143,36 @@ app = FastAPI(
 
 @app.middleware("http")
 async def admin_authentication(request: Request, call_next):
-    """生产环境同时支持浏览器 Basic 登录和自动化 X-Admin-Key。"""
-    protected = request.url.path == "/admin" or request.url.path.startswith(
-        ("/admin/", "/knowledge", "/business", "/docs", "/redoc", "/openapi.json")
-    )
-    if settings.app_env == "production" and protected:
-        configured = settings.admin_api_key
-        supplied = request.headers.get("X-Admin-Key", "")
-        authorization = request.headers.get("Authorization", "")
-        # 只有通过验证的 API key 才能豁免浏览器来源检查。
-        valid_api_key = bool(
-            configured
-            and supplied
-            and secrets.compare_digest(supplied.encode("utf-8"), configured.encode("utf-8"))
+    """生产环境的管理台鉴权。
+
+    凭据优先级：`X-Admin-Key`（自动化）→ 会话 Cookie（浏览器登录页）→ 旧版 Basic。
+    浏览器导航未登录时跳转登录页（不回 `WWW-Authenticate`，避免原生弹窗）；
+    前端 fetch 未登录时返回 401，由页面负责跳转。
+    """
+    path = request.url.path
+    if settings.app_env != "production" or not admin_auth.is_protected_path(path):
+        return await call_next(request)
+    if path in admin_auth.PUBLIC_ADMIN_PATHS:
+        return await call_next(request)
+
+    configured = settings.admin_api_key or ""
+    if not admin_auth.api_key_matches(request.headers.get("X-Admin-Key", ""), configured):
+        valid_session = admin_auth.session_token_is_valid(
+            request.cookies.get(admin_auth.SESSION_COOKIE, ""), configured
         )
-        browser_basic = authorization.startswith("Basic ") and not valid_api_key
-        if browser_basic and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-            origin = request.headers.get("Origin")
-            referer = request.headers.get("Referer")
-            source = origin or referer
-            parsed = urlparse(source or "")
-            if request.headers.get("Sec-Fetch-Site") == "cross-site" or (
-                source is not None
-                and (parsed.scheme != request.url.scheme or parsed.netloc != request.url.netloc)
-            ):
-                return JSONResponse({"detail": "跨站请求已拒绝"}, status_code=403)
-        if authorization.startswith("Basic ") and not valid_api_key:
-            try:
-                decoded = base64.b64decode(
-                    authorization.removeprefix("Basic "), validate=True
-                ).decode("utf-8")
-                username, _, password = decoded.partition(":")
-                if username == "admin":
-                    supplied = password
-            except (binascii.Error, UnicodeDecodeError):
-                supplied = ""
-        if not configured or not secrets.compare_digest(
-            supplied.encode("utf-8"), configured.encode("utf-8")
-        ):
-            return JSONResponse(
-                {"detail": "管理接口未授权"},
-                status_code=401,
-                headers={"WWW-Authenticate": 'Basic realm="Knowledge Admin"'},
-            )
+        browser_credentials = valid_session or admin_auth.basic_credentials_match(
+            request, configured
+        )
+        if not browser_credentials:
+            if admin_auth.is_browser_navigation(request):
+                target = quote(request.url.path, safe="/")
+                return RedirectResponse(
+                    f"{admin_auth.LOGIN_PATH}?next={target}", status_code=303
+                )
+            return JSONResponse({"detail": "管理接口未授权"}, status_code=401)
+        # 会话 Cookie 与 Basic 都属于浏览器凭据，写入前必须同源。
+        if request.method in admin_auth.WRITE_METHODS and admin_auth.is_cross_site(request):
+            return JSONResponse({"detail": "跨站请求已拒绝"}, status_code=403)
     return await call_next(request)
 
 

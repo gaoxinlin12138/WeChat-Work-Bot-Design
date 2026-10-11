@@ -13,7 +13,7 @@
 - 回复话术管理、意图识别、问答测试和识别纠错记录；
 - PostgreSQL + pgvector、Redis 会话、项目备份及隔离数据库测试。
 
-当前采用单机部署：制度原文件和产品媒体保存在本地磁盘，索引与回收站清理使用 Web 进程内后台任务。尚未接入对象存储、OCR、独立任务 Worker、正式数据库迁移系统或多机共享部署。
+当前采用单机部署：制度原文件和产品媒体保存在本地磁盘，索引与回收站清理使用 Web 进程内后台任务。尚未接入对象存储、OCR 服务、独立任务 Worker、正式数据库迁移系统或多机共享部署。
 
 ## 系统架构
 
@@ -22,10 +22,10 @@
   ↕ 官方 WebSocket 长连接
 机器人进程：app.wecom.long_connection
   ├─ LangGraph 主链：规划 → 执行 → 校验 → 统一回答
-  ├─ QueryPlan 计划契约 → 既有 V2 执行器
+  ├─ 产品/媒体 QueryPlan 计划契约 → 既有 V2 执行器
   ├─ PostgreSQL 17 + pgvector 0.8.1
-  ├─ Redis 共享会话
-  ├─ DeepSeek：复杂任务规划与答案归纳
+  ├─ Redis 共享会话（生产推荐）
+  ├─ OpenAI-compatible LLM：复杂任务规划与答案归纳
   └─ 百炼 text-embedding-v3：1024 维向量
 
 管理员浏览器
@@ -99,21 +99,23 @@ LANGGRAPH_CHECKPOINT_ENABLED=false
 LANGGRAPH_CHECKPOINT_POOL_SIZE=4
 ```
 
-`ADMIN_API_KEY` 用于保护管理台。远程访问管理台时必须使用 HTTPS 或受控内网入口，不要把 FastAPI、PostgreSQL 或 Redis 端口直接开放到公网。浏览器 Basic 认证用户名为 `admin`，密码为本机 `.env` 中的 `ADMIN_API_KEY`；只在服务器本机查看，不要发送到聊天或写入截图。
+`ADMIN_API_KEY` 用于保护管理台。远程访问管理台时必须使用 HTTPS 或受控内网入口，不要把 FastAPI、PostgreSQL 或 Redis 端口直接开放到公网。生产环境下未登录的浏览器会被引导到管理台登录页 `/admin/login`，账号固定为 `admin`，密码为本机 `.env` 中的 `ADMIN_API_KEY`；登录成功后签发 12 小时有效的 HttpOnly 会话 Cookie，侧栏底部可退出。自动化脚本改用请求头 `X-Admin-Key: <管理密钥>`，旧版 Basic 认证仍然兼容。密钥只在服务器本机查看，不要发送到聊天或写入截图。
 
 首次建表后不要直接修改 `EMBEDDING_DIMENSIONS`。更换向量维度需要迁移字段并重新生成全部向量。
 
 业务智能体统一由 LangGraph 的
 `normalize_input -> create_plan -> execute_task -> verify_results -> finalize_reply` 主链编排，
-不再保留“单意图映射单节点”的旧主链。简单请求生成一个快速任务；包含多个明确目标的请求最多
-生成四个只读任务，按依赖顺序执行。模型只能从制度、通用资料、产品、媒体、话术和普通对话
-这些既有领域能力中规划任务，不能规划发布、修改或删除操作。执行结果先检查来源、权限和完整性，
-再合并成最终回复；模型计划解析失败时自动降级为规则计划。
+不再保留“单意图映射单节点”的旧主链。简单请求生成一个任务；包含多个明确目标的请求最多
+生成四个只读任务，按依赖顺序执行。确定性状态请求可直接处理；其余请求在模型可用时优先由模型规划，
+模型只能从制度、通用资料、产品、媒体、话术和普通对话这些既有领域能力中规划任务，不能规划发布、
+修改或删除操作。执行结果先检查来源、权限和完整性，再合并成最终回复；模型不可用、调用失败或计划
+解析失败时自动降级为规则计划。
 
-产品查询现在统一使用“QueryPlan 审查 + V2 执行器”链路：模型/规则先提出 ProductQuery，
-生产阶段转换为统一 QueryPlan，完成字段、证据、权限和形状校验后，再桥接回现有 V2 执行器。
+产品查询现在统一使用“QueryPlan 审查 + V2 执行器”链路：模型优先提出结构化意图和 ProductQuery，
+模型不可用或失败时由规则计划兜底；生产阶段转换为统一 QueryPlan，完成字段、证据、权限和形状校验后，
+再桥接回现有 V2 执行器。
 旧的 legacy、shadow、off 产品分支已经删除，不存在两套线上答案；QueryPlan 只负责生产计划契约、
-审计和回放，ProductQuery/product_store 仍是唯一实际产品执行器。
+审计和回放，`ProductQuery` 是查询契约，`product.py` + `product_store.py` 是唯一实际产品执行路径。
 `LANGGRAPH_CHECKPOINT_ENABLED=true` 会在 PostgreSQL 中初始化 LangGraph checkpoint 表，必须在
 数据库备份和隔离环境验证完成后单独开启。企业微信 `msgid` 会作为幂等请求标识，thread id 按企业、
 机器人和会话隔离并哈希保存。
@@ -154,7 +156,7 @@ $env:TEST_DATABASE_URL="postgresql://test-user:password@localhost/test-db"
 - 就绪检查：<http://127.0.0.1:8000/health/ready>
 - 开发接口文档：<http://127.0.0.1:8000/docs>
 
-`/health` 返回 `status=ok` 只代表 Web 进程存活。正式可用应以 `/health/ready` 返回 HTTP 200 为准；该接口会检查数据库、必需表、向量维度、Redis 和模型配置。模型显示 `configured` 仅代表配置完整，仍需通过真实问答验证。
+`/health` 返回 `status=ok` 只代表 Web 进程存活。正式可用应以 `/health/ready` 返回 HTTP 200 为准；该接口会检查数据库、必需表、向量维度和模型配置，Redis 与企业微信按当前部署可为 `ok` 或 `not_configured`。模型显示 `configured` 仅代表配置完整，仍需通过真实问答验证。
 
 长连接日志出现 `wecom_long_connection_authenticated` 后，才表示企业微信认证完成。
 

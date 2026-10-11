@@ -268,7 +268,11 @@ def test_bulk_business_trash_routes_reject_empty_or_oversized_batches() -> None:
     )
 
 
-def test_production_admin_supports_browser_basic_auth(monkeypatch) -> None:
+def test_production_admin_redirects_browser_to_login_page(monkeypatch) -> None:
+    """浏览器导航未登录时跳转管理台登录页，且不能回 WWW-Authenticate。
+
+    一旦回 WWW-Authenticate，浏览器就会弹出原生 Basic 弹窗——那正是要替换掉的体验。
+    """
     monkeypatch.setattr(
         main_module,
         "settings",
@@ -276,14 +280,32 @@ def test_production_admin_supports_browser_basic_auth(monkeypatch) -> None:
     )
     client = TestClient(app)
 
-    denied = client.get("/admin")
-    allowed = client.get("/admin", auth=("admin", "secret"))
-    docs_denied = client.get("/docs")
+    denied = client.get("/admin", follow_redirects=False)
+    docs_denied = client.get("/docs", follow_redirects=False)
+    api_denied = client.get("/business/products", follow_redirects=False)
 
-    assert denied.status_code == 401
-    assert "Basic" in denied.headers["WWW-Authenticate"]
-    assert allowed.status_code == 200
+    assert denied.status_code == 303
+    assert denied.headers["location"] == "/admin/login?next=/admin"
+    assert "WWW-Authenticate" not in denied.headers
+    # 前端 fetch 与接口调用仍返回 401，由页面自行跳转登录页。
     assert docs_denied.status_code == 401
+    assert api_denied.status_code == 401
+
+
+def test_production_admin_still_accepts_legacy_basic_auth(monkeypatch) -> None:
+    """旧版 Basic 保留，避免既有脚本与工具失效。"""
+    monkeypatch.setattr(
+        main_module,
+        "settings",
+        SimpleNamespace(app_env="production", admin_api_key="secret"),
+    )
+    client = TestClient(app)
+
+    allowed = client.get("/admin", auth=("admin", "secret"))
+    wrong = client.get("/admin", auth=("admin", "wrong"), follow_redirects=False)
+
+    assert allowed.status_code == 200
+    assert wrong.status_code == 303
 
 
 def _document() -> Document:
