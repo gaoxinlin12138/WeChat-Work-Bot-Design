@@ -1,6 +1,7 @@
 import argparse
 import json
 from dataclasses import asdict
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
@@ -10,6 +11,8 @@ from openai import OpenAI
 from app.agent import RagAgent
 from app.business.chain_eval import ChainEvalCase, ChainReply, run_chain_evaluation
 from app.business.intent import Intent, decide_intent, fallback_intent_decision
+from app.business.product_query import ProductQuery
+from app.business.product_store import ProductQueryResult
 from app.business.service import BusinessAgent
 from app.business.store import BusinessResult
 from app.config import Settings, get_settings
@@ -107,6 +110,27 @@ class SnapshotKnowledgeStore:
 
 class SnapshotBusinessStore:
     def __init__(self) -> None:
+        self.product_rows = [
+            {
+                "id": "product-lta-822",
+                "model": "LTA-822",
+                "series": "太空铝系列",
+                "product_description": "套装花洒",
+                "material": "全铝材质",
+                "spray_modes": 4,
+                "color": "灰色",
+                "special_function": None,
+                "shipping_origin": "浙江宁波",
+                "set_price": Decimal("170.00"),
+                "cost_price": None,
+                "body_price": Decimal("110.00"),
+                "piece_count": None,
+                "supplier": None,
+                "body_supplier": None,
+                "components": [],
+                "notes": None,
+            }
+        ]
         self.products = [
             BusinessResult(
                 "product",
@@ -154,6 +178,52 @@ class SnapshotBusinessStore:
 
     def search_products(self, query, **kwargs):
         return [] if "不存在" in query or "9999" in query else self.products
+
+    def product_text_field_values(self) -> dict[str, tuple[str, ...]]:
+        return {
+            "series": ("太空铝系列",),
+            "material": ("全铝材质",),
+            "color": ("灰色",),
+            "special_function": (),
+            "shipping_origin": ("浙江宁波",),
+        }
+
+    def query_products_v2(
+        self,
+        product_query: ProductQuery,
+        *,
+        include_sensitive: bool,
+    ) -> ProductQueryResult:
+        rows = [dict(item) for item in self.product_rows]
+        references = product_query.effective_references()
+        if references:
+            rows = [
+                item
+                for item in rows
+                if any(
+                    (
+                        str(item["id"]) == reference.value.removeprefix("id:")
+                        if reference.kind == "context" and reference.value.startswith("id:")
+                        else str(item["model"]).casefold() == reference.value.casefold()
+                        if reference.kind in {"exact", "context"}
+                        else reference.value.casefold() in str(item["model"]).casefold()
+                    )
+                    for reference in references
+                )
+            ]
+        for excluded in product_query.exclude_models:
+            rows = [
+                item
+                for item in rows
+                if excluded.casefold() not in str(item["model"]).casefold()
+            ]
+        if not include_sensitive:
+            for item in rows:
+                item["cost_price"] = None
+        page_size = max(1, min(5, product_query.page_size))
+        page = max(1, product_query.page)
+        start = (page - 1) * page_size
+        return ProductQueryResult(rows[start : start + page_size], len(rows), page, page_size)
 
     def get_active_product(self, product_id):
         return next((p for p in self.products if p.source_id == product_id), None)

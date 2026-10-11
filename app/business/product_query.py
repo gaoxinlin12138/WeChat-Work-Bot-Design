@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from app.business.product_focus import ProductFocus
 from app.ontology.schema import (
     PRODUCT_FIELD_CATALOG as _ONTOLOGY_FIELD_CATALOG,
 )
@@ -24,8 +25,9 @@ from app.ontology.schema import (
 )
 
 ProductOperation = Literal[
-    "detail", "search", "list", "compare", "recommend", "media", "aggregate"
+    "detail", "search", "list", "compare", "recommend", "media", "aggregate", "count"
 ]
+ProductCountTarget = Literal["product"]
 ProductFilterOperator = Literal[
     "equals",
     "contains",
@@ -144,6 +146,20 @@ class ProductQuery:
     # Internal provenance, never accepted from model JSON. Survives plan transforms.
     original_fields: tuple[str, ...] = ()
     allow_overview: bool = False
+    # Count has an explicit entity target so "多少种产品" cannot be confused
+    # with distinct aggregation over a field.
+    target: ProductCountTarget = "product"
+    # Deterministic pre-parser provenance.  These fields are never accepted
+    # from model JSON; they record conditions that the employee explicitly
+    # supplied so the server can reject a model plan that silently widens the
+    # query.  Rule-based plans may also copy them into the executable shape.
+    required_references: tuple[ProductReference, ...] = ()
+    required_filters: tuple[ProductFilter, ...] = ()
+    required_operation: ProductOperation | None = None
+    # Server-resolved result IDs.  This is never accepted from model JSON;
+    # it is populated only after a trusted conversation focus resolves an
+    # ordinal reference and survives graph/context serialization.
+    resolved_product_ids: tuple[str, ...] = ()
 
     def effective_references(self) -> tuple[ProductReference, ...]:
         if self.references:
@@ -249,7 +265,7 @@ def ambiguity_choice(message: str) -> str | None:
 #
 # 这里必须覆盖 intent 侧 _PRODUCT_OVERVIEW_WORDS 的每一个短语。此前「参数」「规格」
 # 只出现在意图路由词表里、不在这里，于是「LY0653GDT 的全部参数」被判成「没说要哪些
-# 字段」：旧链路会列出全部字段，V2 直接拒答。这正是同类词表漏项那一类缺陷。
+# 字段」：结构化查询会拒绝无法从原话确认的字段，避免把模糊请求扩展成完整资料。
 PRODUCT_OVERVIEW_FILLER_WORDS = (
     # 礼貌语与动作
     "查一下",
@@ -361,6 +377,30 @@ def _filter_value_is_valid(item: ProductFilter, value_type: str) -> bool:
 
 
 def detect_product_ambiguities(message: str) -> tuple[ProductAmbiguity, ...]:
+    if re.search(
+        r"(?:成本|采购|进价).{0,8}(?:还是|或|或者).{0,8}(?:价格|售价|套装价|主体价)"
+        r"|(?:价格|售价|套装价|主体价).{0,8}(?:还是|或|或者).{0,8}(?:成本|采购|进价)",
+        message,
+    ):
+        return (
+            ProductAmbiguity(
+                code="price_scope",
+                question="你想查询公开销售价格，还是成本/采购价格？",
+                options=("销售价格", "成本价格"),
+            ),
+        )
+    if re.search(
+        r"(?:主体|主体价).{0,10}(?:还是|或|或者).{0,10}(?:套装|套装价|公开价格)"
+        r"|(?:套装|套装价|公开价格).{0,10}(?:还是|或|或者).{0,10}(?:主体|主体价)",
+        message,
+    ):
+        return (
+            ProductAmbiguity(
+                code="price_scope",
+                question="你想查询主体价格，还是整套产品的套装价格？",
+                options=("主体价格", "套装价格"),
+            ),
+        )
     if any(
         re.search(r"套装.{0,3}(?:材料|材质|用料)", clause)
         and not any(word in clause for word in ("配件", "清单", "主体", "本体"))
@@ -396,6 +436,14 @@ class ProductOperationDefinition:
 
 # 操作本体。加一种问法应当改这张表，而不是在规划层再加一个 `if marker in query`。
 PRODUCT_OPERATION_CATALOG: dict[ProductOperation, ProductOperationDefinition] = {
+    "count": ProductOperationDefinition(
+        "数量统计",
+        "统计匹配产品的数量；不要求指定维度或字段",
+        patterns=(
+            r"(?:有多少|多少种|几种|有几个|几个|产品总数|产品数量).{0,8}(?:产品|型号|款|种)",
+            r"(?:产品|型号|款)的?(?:总数|数量)",
+        ),
+    ),
     "compare": ProductOperationDefinition(
         "对比",
         "比较两个或多个已登记型号的字段取值",
@@ -416,7 +464,7 @@ PRODUCT_OPERATION_CATALOG: dict[ProductOperation, ProductOperationDefinition] = 
 }
 
 # 判定顺序：越具体的操作越先匹配，detail 是兜底因此不参与识别。
-_OPERATION_MATCH_ORDER: tuple[ProductOperation, ...] = ("compare", "recommend")
+_OPERATION_MATCH_ORDER: tuple[ProductOperation, ...] = ("count", "compare", "recommend")
 
 
 def detect_product_operation(query: str) -> ProductOperation | None:
@@ -432,6 +480,276 @@ def detect_product_operation(query: str) -> ProductOperation | None:
     return None
 
 
+_PREPARSE_TEXT_FIELDS: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
+    (name, definition.aliases)
+    for name, definition in PRODUCT_FIELD_CATALOG.items()
+    if definition.filterable
+    and definition.value_type == "text"
+    and definition.role in {"identifier", "dimension"}
+    and not definition.sensitive
+    and name not in {"model", "special_function"}
+)
+
+
+def _preparse_value(value: str) -> str:
+    value = re.split(
+        r"(?:的)?(?:产品|型号|款|有)?(?:哪些|有多少|多少种|几款|多少款|是哪|分别)",
+        value,
+        maxsplit=1,
+    )[0]
+    value = value.strip(" \t，,；;。！？!?：:")
+    for suffix in ("的有", "有", "的"):
+        if value.endswith(suffix):
+            value = value[: -len(suffix)]
+            break
+    return value.strip()
+
+
+def _preparse_text_filters(message: str) -> tuple[ProductFilter, ...]:
+    """Extract explicit text conditions using the shared field catalogue."""
+    compact = message.strip()
+    found: list[ProductFilter] = []
+    stop_words = (
+        "并且", "以及", "同时", "另外", "且", "和", "与", "、",
+        "产品", "型号", "款", "哪些", "有多少", "多少种", "几款",
+    )
+    stop_pattern = "|".join(re.escape(word) for word in sorted(stop_words, key=len, reverse=True))
+    for field, aliases in _PREPARSE_TEXT_FIELDS:
+        if not field_semantic_spans(field, message):
+            continue
+        alias_pattern = "|".join(
+            re.escape(alias) for alias in sorted(aliases, key=len, reverse=True)
+        )
+        after = re.compile(
+            rf"(?P<label>{alias_pattern})\s*(?:是|为|叫|：|:|等于|包含|包括|在)?\s*"
+            rf"(?P<value>[\u3400-\u9fffA-Za-z0-9·_.+\-/％%]+?)(?={stop_pattern}|$)"
+        )
+        for match in after.finditer(compact):
+            value = _preparse_value(match.group("value"))
+            if (
+                not value
+                or value in aliases
+                or value
+                in {
+                    "什么", "哪些", "有", "的", "呢", "吗", "嘛", "吧", "它", "这", "那",
+                    "这个", "那个", "这款", "那款",
+                }
+                or any(
+                    alias in value
+                    for _, field_aliases in _PREPARSE_TEXT_FIELDS
+                    for alias in field_aliases
+                    if alias not in aliases
+                )
+            ):
+                continue
+            if value.startswith(("什么", "哪些", "哪种", "哪款")):
+                continue
+            evidence = compact[max(0, match.start()) : match.end()]
+            operator = (
+                "contains" if any(word in evidence for word in ("包含", "包括")) else "equals"
+            )
+            found.append(ProductFilter(field, operator, value, evidence, "fallback"))
+
+        before = re.compile(
+            rf"(?:^|[，,；;。！？!?、])(?P<value>[\u3400-\u9fffA-Za-z0-9·_.+\-/％%]{{1,32}})\s*(?:的)?"
+            rf"(?P<label>{alias_pattern})"
+        )
+        for match in before.finditer(compact):
+            value = _preparse_value(match.group("value"))
+            if (
+                not value
+                or value in aliases
+                or value.endswith(("主体", "产品", "套装"))
+                or any(
+                    alias in value
+                    for _, field_aliases in _PREPARSE_TEXT_FIELDS
+                    for alias in field_aliases
+                )
+                or re.search(r"什么|哪些|哪种|哪款", value)
+                or re.search(r"[A-Za-z]+\d", value)
+                or value in {"它", "这", "那", "这个", "那个", "这款", "那款", "呢", "吗", "嘛"}
+            ):
+                continue
+            if field == "series" and any(
+                token.casefold() == value.casefold()
+                for token in re.findall(r"[A-Za-z]+\d+", value)
+            ):
+                continue
+            evidence = compact[max(0, match.start()) : match.end()]
+            found.append(ProductFilter(field, "contains", value, evidence, "fallback"))
+
+    generic = re.search(r"(?:有|含有|带有|具有|支持)\s*特殊功能", compact)
+    if generic:
+        found.append(
+            ProductFilter("special_function", "is_present", "", generic.group(), "fallback")
+        )
+    else:
+        for match in re.finditer(
+            r"(?:支持|带有|带|具有|含有|有)\s*(?P<value>[\u3400-\u9fffA-Za-z0-9·_.+\-/]{1,24})(?:功能)?(?:的产品|产品)?",
+            compact,
+        ):
+            value = _preparse_value(match.group("value"))
+            if value and value != "特殊" and not value.startswith(("多少", "几个", "哪些", "哪")):
+                found.append(
+                    ProductFilter("special_function", "contains", value, match.group(), "fallback")
+                )
+    unique: dict[tuple[object, ...], ProductFilter] = {}
+    for item in found:
+        unique.setdefault((item.field, item.operator, item.value), item)
+    return tuple(unique.values())
+
+
+def _preparse_numeric_filters(message: str) -> tuple[ProductFilter, ...]:
+    """Extract explicit numeric/range constraints for prices and quantities."""
+    number = r"(?:￥|¥)?\d+(?:\.\d+)?"
+    relation = (
+        r"以内|以下|之内|不超过|最多|不高于|以上|不低于|不少于|起步|低于|少于|小于|"
+        r"不到|高于|超过|大于|左右|上下"
+    )
+    patterns = (
+        re.compile(rf"(?P<left>{number})\s*(?:到|至|~|～|—|-)\s*(?P<right>{number})"),
+        re.compile(rf"(?P<num>{number})\s*(?P<rel>{relation})"),
+        re.compile(rf"(?P<rel>低于|少于|小于|不到|高于|超过|大于|不超过|不低于|不少于)\s*(?P<num>{number})"),
+    )
+    filters: list[ProductFilter] = []
+    consumed: set[tuple[int, int]] = set()
+    for pattern in patterns:
+        for match in pattern.finditer(message):
+            if any(
+                start <= match.start() < end or start < match.end() <= end
+                for start, end in consumed
+            ):
+                continue
+            prefix = message[max(0, match.start() - 18) : match.start()]
+            # A second condition after “且/并且/以及/，” has its own field
+            # context; do not let the preceding price cue bleed into it.
+            prefix = re.split(r"[，,；;。！？!?、]|并且|以及|同时|且|和|与", prefix)[-1]
+            semantic_evidence = prefix + match.group()
+            numeric_fields = [
+                field
+                for field, definition in PRODUCT_FIELD_CATALOG.items()
+                if definition.filterable
+                and definition.value_type == "number"
+                and _field_supported_by_evidence(field, semantic_evidence)
+            ]
+            if len(numeric_fields) != 1:
+                continue
+            field = numeric_fields[0]
+            if "left" in match.groupdict():
+                value: object = (float(match.group("left")), float(match.group("right")))
+                operator = "between"
+            else:
+                numeric = float(match.group("num"))
+                rel = match.group("rel")
+                if rel in {"以内", "以下", "之内", "不超过", "最多", "不高于"}:
+                    operator = "less_than_or_equal"
+                    value = numeric
+                elif rel in {"以上", "不低于", "不少于", "起步"}:
+                    operator = "greater_than_or_equal"
+                    value = numeric
+                elif rel in {"低于", "少于", "小于", "不到"}:
+                    operator = "less_than"
+                    value = numeric
+                elif rel in {"高于", "超过", "大于"}:
+                    operator = "greater_than"
+                    value = numeric
+                else:
+                    operator = "between"
+                    value = (numeric * 0.9, numeric * 1.1)
+            evidence = message[max(0, match.start() - 12) : match.end()].strip()
+            filters.append(ProductFilter(field, operator, value, evidence, "fallback"))
+            consumed.add((match.start(), match.end()))
+    return tuple(filters)
+
+
+def _preparse_sort_and_page(message: str) -> tuple[tuple[ProductSort, ...], int, int]:
+    sorts: list[ProductSort] = []
+    label = r"成本价|采购价|进价|主体价|主体价格|套装价|价格"
+    descending = re.search(
+        rf"(?P<label>{label}).{{0,4}}(?:从高到低|降序|由高到低|最高优先|贵到便宜)",
+        message,
+    )
+    ascending = re.search(
+        rf"(?P<label>{label}).{{0,4}}(?:从低到高|升序|由低到高|便宜到贵)",
+        message,
+    )
+    matched = descending or ascending
+    if matched:
+        price_label = matched.group("label")
+        field = (
+            "cost_price"
+            if price_label in {"成本价", "采购价", "进价"}
+            else "body_price"
+            if price_label in {"主体价", "主体价格"}
+            else "set_price"
+        )
+        sorts.append(ProductSort(field, "desc" if descending else "asc"))
+    page = 1
+    page_size = 5
+    page_match = re.search(r"第\s*(\d+)\s*页", message)
+    if page_match:
+        page = max(1, int(page_match.group(1)))
+    size_match = re.search(r"每页\s*(\d+)\s*(?:个|款|条)?", message)
+    if size_match:
+        page_size = max(1, min(5, int(size_match.group(1))))
+    return tuple(sorts), page, page_size
+
+
+def preparse_product_query(message: str) -> ProductQuery:
+    """Deterministically pre-parse explicit employee conditions."""
+    from app.business.product_selection import product_identifier_tokens
+
+    tokens = tuple(product_identifier_tokens(message))
+    references = tuple(ProductReference(token, "fragment", token, "fallback") for token in tokens)
+    filters = (*_preparse_text_filters(message), *_preparse_numeric_filters(message))
+    sorts, page, page_size = _preparse_sort_and_page(message)
+    operation = detect_product_operation(message)
+    aggregate = None
+    # “最便宜/最低价的产品价格是多少”是全库最低价统计，不是缺少型号的详情查询。
+    if re.search(r"(?:最便宜|最低价|价格最低|最划算)", message) and re.search(
+        r"(?:价格|价钱|多少钱|售价|套装价|主体价)", message
+    ):
+        operation = "aggregate"
+        aggregate = ProductAggregate(
+            kind="min",
+            field="body_price" if re.search(r"主体价|主体价格", message) else "set_price",
+            evidence="主体价" if re.search(r"主体价|主体价格", message) else "价格",
+            source="fallback",
+        )
+    if operation is None and re.search(r"(?:列出|有哪些|哪几款|哪些产品)", message):
+        operation = "list"
+    return ProductQuery(
+        operation=operation or "detail",
+        include_models=tuple(item.value for item in references),
+        references=references,
+        filters=tuple(filters),
+        sorts=sorts,
+        aggregate=aggregate,
+        page=page,
+        page_size=page_size,
+        required_references=references,
+        required_filters=tuple(filters),
+        required_operation=operation,
+    )
+
+
+deterministic_product_preparse = preparse_product_query
+
+
+def _same_filter(left: ProductFilter, right: ProductFilter) -> bool:
+    def canonical(value: object) -> object:
+        if isinstance(value, (tuple, list)):
+            return tuple(canonical(item) for item in value)
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+        return value.casefold().replace(" ", "") if isinstance(value, str) else value
+
+    return (
+        left.field == right.field
+        and left.operator == right.operator
+        and canonical(left.value) == canonical(right.value)
+    )
+
 
 def validate_product_query(
     product_query: ProductQuery,
@@ -439,9 +757,38 @@ def validate_product_query(
     *,
     can_view_cost: bool,
     trusted_context: ProductQuery | None = None,
+    trusted_focus: ProductFocus | None = None,
 ) -> ProductValidationResult:
     """Ground model output in the employee's words and enforce field permissions."""
     errors: list[str] = []
+    if product_query.target != "product":
+        errors.append("count 只支持 target=product")
+    # The deterministic pre-parser is a safety boundary, not merely a hint.
+    # Every explicit condition must survive model assembly; otherwise a model
+    # that drops a price range could execute a broad query.
+    preparse = preparse_product_query(message)
+    required_operation = product_query.required_operation or (
+        preparse.required_operation
+        if preparse.required_operation in {"count", "compare", "recommend", "aggregate"}
+        else None
+    )
+    required_references = product_query.required_references or preparse.required_references
+    required_filters = product_query.required_filters or preparse.required_filters
+    if required_operation and product_query.operation != required_operation:
+        errors.append(
+            f"产品操作与原话不一致：原话要求 {required_operation}，"
+            f"模型给出 {product_query.operation}"
+        )
+    proposed_references = product_query.effective_references()
+    for required in required_references:
+        if not any(
+            _normalized(required.value) == _normalized(item.value)
+            for item in proposed_references
+        ):
+            errors.append(f"型号条件未被保留：{required.value}")
+    for required in required_filters:
+        if not any(_same_filter(required, item) for item in product_query.filters):
+            errors.append(f"产品筛选条件未被保留：{required.field}")
     proposed = {item.field for item in product_query.effective_field_requests()}
     removed: list[str] = [name for name in product_query.original_fields if name not in proposed]
     denied: list[str] = []
@@ -458,25 +805,52 @@ def validate_product_query(
     ambiguities = tuple(
         dict.fromkeys((*detect_product_ambiguities(message), *product_query.ambiguities))
     )
+    if (
+        trusted_focus is not None
+        and not trusted_focus.is_valid()
+        and product_query.context_mode == "continuation"
+    ):
+        errors.append("产品上下文已过期，请重新列出产品后再按序号查询")
 
     references: list[ProductReference] = []
+    resolved_ids: list[str] = list(product_query.resolved_product_ids)
+    if trusted_focus is not None and trusted_focus.result_ids:
+        allowed_ids = set(trusted_focus.result_ids)
+        if any(item not in allowed_ids for item in resolved_ids):
+            errors.append("上下文产品不在上一轮展示结果中")
+            resolved_ids = []
     for reference in product_query.effective_references():
         if not reference.value.strip():
             continue
-        grounded = (
-            reference.value.casefold() in context_references
-            if reference.source == "context"
-            else _evidence_is_grounded(
-                reference.evidence or (reference.value if reference.source == "fallback" else ""),
-                message,
+        focus_id = None
+        if reference.source == "context" and trusted_focus is not None and trusted_focus.result_ids:
+            if reference.value.startswith("id:"):
+                candidate_id = reference.value.removeprefix("id:")
+                if candidate_id in trusted_focus.result_ids:
+                    focus_id = candidate_id
+            else:
+                focus_id = trusted_focus.model_to_id(reference.value)
+            grounded = focus_id is not None
+        else:
+            grounded = (
+                reference.value.casefold() in context_references
+                if reference.source == "context"
+                else _evidence_is_grounded(
+                    reference.evidence
+                    or (reference.value if reference.source == "fallback" else ""),
+                    message,
+                )
+                and _normalized(reference.value) in _normalized(message)
             )
-            and _normalized(reference.value) in _normalized(message)
-        )
         grounded = grounded and reference.source in {"current", "fallback", "context"}
         if not grounded:
             errors.append(f"型号引用缺少当前问题依据：{reference.value}")
             continue
-        references.append(reference)
+        if focus_id is not None:
+            resolved_ids.append(focus_id)
+            references.append(replace(reference, value=f"id:{focus_id}", kind="context"))
+        else:
+            references.append(reference)
 
     requests: list[ProductFieldRequest] = []
     for request in product_query.effective_field_requests():
@@ -547,7 +921,7 @@ def validate_product_query(
     accepted_sorts: list[ProductSort] = []
     for item in product_query.sorts:
         definition = PRODUCT_FIELD_CATALOG.get(item.field)
-        if definition is None or definition.value_type in {"media", "json"}:
+        if definition is None or not definition.can_sort:
             errors.append(f"不支持的排序字段：{item.field}")
             continue
         if definition.sensitive and not can_view_cost:
@@ -601,7 +975,8 @@ def validate_product_query(
             min(10 if product_query.operation == "recommend" else 5, product_query.page_size),
         ),
         ambiguities=ambiguities,
-        allow_overview=is_overview_request(message, tuple(references))
+        allow_overview=product_query.allow_overview
+        or is_overview_request(message, tuple(references))
         or bool(
             context
             and context.allow_overview
@@ -616,6 +991,7 @@ def validate_product_query(
                 )
             )
         ),
+        resolved_product_ids=tuple(dict.fromkeys(resolved_ids)),
     )
     return ProductValidationResult(
         query=validated,
@@ -631,6 +1007,7 @@ def product_query_to_dict(product_query: ProductQuery) -> dict[str, object]:
     return {
         "version": product_query.version,
         "operation": product_query.operation,
+        "target": product_query.target,
         "include_models": list(product_query.include_models),
         "exclude_models": list(product_query.exclude_models),
         "fields": list(product_query.fields),
@@ -677,6 +1054,27 @@ def product_query_to_dict(product_query: ProductQuery) -> dict[str, object]:
         "page": product_query.page,
         "page_size": product_query.page_size,
         "context_mode": product_query.context_mode,
+        "required_references": [
+            {
+                "value": item.value,
+                "kind": item.kind,
+                "evidence": item.evidence,
+                "source": item.source,
+            }
+            for item in product_query.required_references
+        ],
+        "required_filters": [
+            {
+                "field": item.field,
+                "operator": item.operator,
+                "value": item.value,
+                "evidence": item.evidence,
+                "source": item.source,
+            }
+            for item in product_query.required_filters
+        ],
+        "required_operation": product_query.required_operation,
+        "resolved_product_ids": list(product_query.resolved_product_ids),
         "ambiguities": [
             {"code": item.code, "question": item.question, "options": list(item.options)}
             for item in product_query.ambiguities
@@ -719,6 +1117,27 @@ def product_query_from_dict(value: object) -> ProductQuery | None:
             for item in value.get("filters", [])
             if isinstance(item, dict) and item.get("field") and item.get("operator")
         )
+        required_references = tuple(
+            ProductReference(
+                value=str(item["value"]),
+                kind=str(item.get("kind") or "fragment"),  # type: ignore[arg-type]
+                evidence=str(item.get("evidence") or ""),
+                source=str(item.get("source") or "fallback"),  # type: ignore[arg-type]
+            )
+            for item in value.get("required_references", [])
+            if isinstance(item, dict) and item.get("value")
+        )
+        required_filters = tuple(
+            ProductFilter(
+                field=str(item["field"]),
+                operator=str(item.get("operator") or "contains"),  # type: ignore[arg-type]
+                value=item.get("value", ""),
+                evidence=str(item.get("evidence") or ""),
+                source=str(item.get("source") or "fallback"),  # type: ignore[arg-type]
+            )
+            for item in value.get("required_filters", [])
+            if isinstance(item, dict) and item.get("field")
+        )
         sorts = tuple(
             ProductSort(
                 field=str(item["field"]),
@@ -739,8 +1158,12 @@ def product_query_from_dict(value: object) -> ProductQuery | None:
                     evidence=str(raw_aggregate.get("evidence") or ""),
                     source=str(raw_aggregate.get("source") or "context"),  # type: ignore[arg-type]
                 )
+        target = str(value.get("target") or "product")
+        if target != "product":
+            return None
         return ProductQuery(
             operation=str(value.get("operation") or "detail"),  # type: ignore[arg-type]
+            target=target,  # type: ignore[arg-type]
             include_models=tuple(str(item) for item in value.get("include_models", [])),
             exclude_models=tuple(str(item) for item in value.get("exclude_models", [])),
             fields=tuple(str(item) for item in value.get("fields", [])),
@@ -756,6 +1179,16 @@ def product_query_from_dict(value: object) -> ProductQuery | None:
             page=max(1, int(value.get("page") or 1)),
             page_size=max(1, int(value.get("page_size") or 5)),
             context_mode=str(value.get("context_mode") or "continuation"),  # type: ignore[arg-type]
+            required_references=required_references,
+            required_filters=required_filters,
+            required_operation=(
+                str(value.get("required_operation"))  # type: ignore[arg-type]
+                if value.get("required_operation")
+                else None
+            ),
+            resolved_product_ids=tuple(
+                str(item) for item in value.get("resolved_product_ids", []) if str(item).strip()
+            ),
         )
     except (TypeError, ValueError):
         return None

@@ -12,13 +12,20 @@ import structlog
 from app.business import pending
 from app.business.intent import Intent, IntentDecision, MediaAction, is_product_catalog_query
 from app.business.planner import ProductFilter, ProductQuery
-from app.business.product_outcome import canonical_product_content, product_outcome
+from app.business.product_focus import (
+    FOCUS_TTL_SECONDS,
+    ProductFocus,
+    focus_from_dict,
+    focus_from_legacy,
+    focus_to_dict,
+    ordinal_index,
+)
+from app.business.product_outcome import product_outcome
 from app.business.product_query import (
     PRODUCT_FIELD_CATALOG,
     ProductFieldRequest,
     ProductReference,
     ambiguity_choice,
-    fallback_field_requests,
     product_query_from_dict,
     product_query_to_dict,
     validate_product_query,
@@ -33,9 +40,20 @@ from app.business.product_selection import (
     product_fields,
     product_identifier_tokens,
 )
+from app.business.query_governance import (
+    CursorCodec,
+    OutputPolicy,
+    QueryResult,
+    ResponseEnvelope,
+    query_fingerprint,
+    query_result_from_store,
+    render_envelope,
+    validate_response_envelope,
+)
 from app.business.response_style import format_key_value_lines
 from app.business.store import BusinessResult
 from app.business.tools.common import RoutedReply
+from app.logging import redact_log_message
 from app.ontology.schema import DERIVED_DIMENSIONS, dimension_fields, is_aggregatable
 from app.ontology.values import fields_sharing_value
 from app.ontology.values import matching_values as ontology_matching_values
@@ -85,6 +103,8 @@ _AGGREGATE_MAX_ROWS = 500
 _AGGREGATE_PAGE_SIZE = 10
 # 取值目录的缓存时长。取值变化是"上架新产品"级别的低频，不值得每个提问都查一次库。
 _PRODUCT_VALUE_CACHE_SECONDS = 600.0
+_QUERY_CONTEXT_TTL_SECONDS = 900.0
+_CURSOR_CODEC = CursorCodec(ttl_seconds=int(_QUERY_CONTEXT_TTL_SECONDS))
 
 
 def _value_key(value: str) -> str:
@@ -120,6 +140,57 @@ class ProductToolMixin:
         self._product_values_cache = catalog
         self._product_values_cache_at = now
         return catalog
+
+    def _query_context_valid(self, context: object) -> bool:
+        if not isinstance(context, dict):
+            return False
+        expires_at = context.get("expires_at")
+        if not expires_at:
+            return True
+        try:
+            return float(expires_at) >= time.time()
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _govern_page_reply(
+        reply: RoutedReply,
+        *,
+        user_id: str,
+        query: ProductQuery,
+        result: object,
+    ) -> RoutedReply:
+        contract = query_result_from_store(
+            result, operation=query.operation, requested_fields=tuple(query.fields)
+        )
+        fingerprint = query_fingerprint(product_query_to_dict(query))
+        if contract.has_more:
+            contract = replace(
+                contract,
+                cursor=_CURSOR_CODEC.encode(
+                    user_id=user_id,
+                    query_fingerprint=fingerprint,
+                    page=contract.page + 1,
+                ),
+            )
+        envelope = render_envelope(
+            ResponseEnvelope(
+                request_id=f"internal:{user_id}",
+                status="fact" if contract.items else "no_result",
+                content=reply.content,
+                result=contract,
+                evidence=tuple(reply.sources),
+                context_mode=query.context_mode,
+            ),
+            policy=OutputPolicy(),
+        )
+        trace = dict(reply.execution_trace or {})
+        trace["response_envelope"] = envelope.to_dict()
+        trace["response_validation"] = [
+            {"code": item.code, "message": item.message}
+            for item in validate_response_envelope(envelope)
+        ]
+        return replace(reply, content=envelope.content, execution_trace=trace)
 
     @staticmethod
     def _value_key(value: str) -> str:
@@ -235,14 +306,91 @@ class ProductToolMixin:
 
     def _clear_product_context(self, user_id: str) -> None:
         for state in (
+            self._product_focus,
             self._last_product_by_user,
             self._last_media_by_user,
             self._product_choices,
             self._product_catalog_context,
             self._product_query_context,
-            self._product_shadow_query_context,
         ):
             self._state_pop(state, user_id)
+
+    def _get_product_focus(self, user_id: str) -> ProductFocus | None:
+        """Read the unified focus, converting one legacy payload if needed."""
+        focus = focus_from_dict(self._state_get(self._product_focus, user_id))
+        if focus is not None:
+            return focus
+        legacy_query = self._state_get(self._product_query_context, user_id)
+        legacy_catalog = self._state_get(self._product_catalog_context, user_id)
+        legacy_choices = self._state_get(self._product_choices, user_id)
+        focus = focus_from_legacy(
+            legacy_query,
+            catalog=legacy_catalog,
+            choices=legacy_choices,
+        )
+        if focus is None:
+            return None
+        try:
+            self._product_focus[user_id] = focus_to_dict(focus)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("product_focus_migration_write_failed", error_type=type(exc).__name__)
+        return focus
+
+    def _write_product_focus(
+        self,
+        user_id: str,
+        *,
+        mode: str,
+        query: ProductQuery | None,
+        items: list[dict[str, object]] | None = None,
+        page: int = 1,
+        total: int = 0,
+        pending: dict[str, object] | None = None,
+    ) -> ProductFocus:
+        now = time.time()
+        rows = items or []
+        result_rows = [item for item in rows if item.get("id")]
+        focus = ProductFocus(
+            mode=mode,
+            query_plan=product_query_to_dict(query) if query is not None else None,
+            result_ids=tuple(str(item.get("id") or "") for item in result_rows),
+            result_models=tuple(str(item.get("model") or "") for item in result_rows),
+            page=max(1, page),
+            total=max(0, total),
+            source_query_fingerprint=(
+                query_fingerprint(product_query_to_dict(query)) if query is not None else ""
+            ),
+            created_at=now,
+            expires_at=now + FOCUS_TTL_SECONDS,
+            pending=pending,
+        )
+        self._product_focus[user_id] = focus_to_dict(focus)
+        # Keep old state mirrors during the rolling deployment window.  New
+        # reads always prefer _product_focus; these mirrors are only for old
+        # workers and existing tests/checkpoints.
+        if query is not None:
+            self._product_query_context[user_id] = {
+                "plan": product_query_to_dict(query),
+                "selected_product_ids": list(focus.result_ids),
+                "selected_product_models": list(focus.result_models),
+                "page": focus.page,
+                "total": focus.total,
+                "ids": list(focus.result_ids),
+                "expires_at": focus.expires_at,
+            }
+        catalog_payload = {
+            "mode": "v2" if mode == "list" else f"v2_{mode}",
+            "query": focus.query_plan or {},
+            "ids": list(focus.result_ids),
+            "models": list(focus.result_models),
+            "page": focus.page,
+            "total": focus.total,
+            "expires_at": focus.expires_at,
+        }
+        if mode == "aggregate":
+            catalog_payload["total_values"] = focus.total
+        self._product_catalog_context[user_id] = catalog_payload
+        return focus
 
     @staticmethod
     def _catalog_page_direction(query: str) -> int | None:
@@ -270,7 +418,8 @@ class ProductToolMixin:
         return target if target >= 1 else None
 
     def _catalog_page_requested(self, user_id: str, query: str) -> bool:
-        if not isinstance(self._state_get(self._product_catalog_context, user_id), dict):
+        focus = self._get_product_focus(user_id)
+        if focus is None or focus.mode not in {"list", "aggregate", "family_detail"}:
             return False
         return (
             self._catalog_page_direction(query) is not None
@@ -295,6 +444,20 @@ class ProductToolMixin:
             "media_type": decision.media_type,
             "media_role": decision.media_role,
         }
+        now = time.time()
+        focus = ProductFocus(
+            mode="selection",
+            result_ids=tuple(item.source_id for item in products),
+            result_models=tuple(
+                self._product_field_map(item).get("产品型号", item.title) for item in products
+            ),
+            total=len(products),
+            source_query_fingerprint=query_fingerprint({"query": query}),
+            created_at=now,
+            expires_at=now + FOCUS_TTL_SECONDS,
+            pending=pending_request,
+        )
+        self._product_focus[user_id] = focus_to_dict(focus)
         if len(products) > _MAX_PRODUCT_CHOICES:
             # 候选太多，不展示编号列表；但**必须把原始请求记下来**。
             # 此前这里直接清空状态、什么都不记，于是「发我0653的视频」→反问型号→
@@ -303,6 +466,8 @@ class ProductToolMixin:
             # 里那套「恢复上一轮意图（含 media_action）」的机制根本没机会生效。
             pending_request["choices_shown"] = False
             self._product_choices[user_id] = pending_request
+            focus = replace(focus, pending=dict(pending_request))
+            self._product_focus[user_id] = focus_to_dict(focus)
             return RoutedReply(
                 decision.intent,
                 (
@@ -315,6 +480,8 @@ class ProductToolMixin:
         visible = products
         pending_request["choices_shown"] = True
         self._product_choices[user_id] = pending_request
+        focus = replace(focus, pending=dict(pending_request))
+        self._product_focus[user_id] = focus_to_dict(focus)
         lines = [prefix or f"找到 {len(products)} 款相关产品，请先确认具体型号："]
         for index, product in enumerate(visible, 1):
             fields = self._product_field_map(product)
@@ -338,7 +505,14 @@ class ProductToolMixin:
     def _resume_product_choice(
         self, user_id: str, query: str, fallback: IntentDecision
     ) -> IntentDecision | None:
-        pending = self._state_get(self._product_choices, user_id)
+        focus = self._get_product_focus(user_id)
+        pending = (
+            focus.pending
+            if focus is not None and focus.mode == "selection" and focus.is_valid()
+            else None
+        )
+        if not isinstance(pending, dict) and (focus is None or focus.is_valid()):
+            pending = self._state_get(self._product_choices, user_id)
         if not isinstance(pending, dict):
             return None
         if fallback.intent in {Intent.POLICY, Intent.REPLY_SCRIPT} or is_product_catalog_query(
@@ -394,6 +568,8 @@ class ProductToolMixin:
             self._state_pop(self._product_choices, user_id)
             return None
         self._product_choices[user_id] = pending
+        if focus is not None and focus.mode == "selection":
+            self._product_focus[user_id] = focus_to_dict(replace(focus, pending=pending))
         saved_intent = Intent(pending["intent"])
         if pending.get("choices_shown", True):
             action_requested = fallback.intent in {Intent.PRODUCT, Intent.PRODUCT_MEDIA}
@@ -437,12 +613,25 @@ class ProductToolMixin:
         can_view_cost: bool = False,
         cost_access_message: str = "你当前没有查看成本价和采购价的权限。",
     ) -> tuple[BusinessResult | None, RoutedReply | None]:
-        pending = self._state_get(self._product_choices, user_id)
+        focus = self._get_product_focus(user_id)
+        pending = (
+            self._state_get(self._product_choices, user_id)
+            if focus is None or focus.is_valid()
+            else None
+        )
+        if (
+            not isinstance(pending, dict)
+            and focus is not None
+            and focus.mode == "selection"
+            and focus.is_valid()
+        ):
+            pending = focus.pending
         if decision.source == "conversation_state" and isinstance(pending, dict):
             selected_id = pending.get("selected_id")
             if selected_id:
                 product = self.store.get_active_product(str(selected_id))
                 self._state_pop(self._product_choices, user_id)
+                self._state_pop(self._product_focus, user_id)
                 if product:
                     self._remember_product(user_id, product.source_id)
                     return product, None
@@ -1021,7 +1210,18 @@ class ProductToolMixin:
         can_view_cost: bool,
         cost_access_message: str,
     ) -> RoutedReply | None:
-        context = self._state_get(self._product_catalog_context, user_id)
+        focus = self._get_product_focus(user_id)
+        context = (
+            {
+                "mode": "v2",
+                "query": focus.query_plan,
+                "page": focus.page,
+                "total": focus.total,
+                "expires_at": focus.expires_at,
+            }
+            if focus is not None and focus.query_plan is not None and focus.mode == "list"
+            else self._state_get(self._product_catalog_context, user_id)
+        )
         if not isinstance(context, dict):
             return None
         direction = self._catalog_page_direction(query)
@@ -1052,8 +1252,6 @@ class ProductToolMixin:
                 "已经是产品目录的第一页。" if direction < 0 else "已经是产品目录的最后一页。",
                 [],
             )
-        context["page"] = next_page
-        self._product_catalog_context[user_id] = context
         if mode == "family_detail":
             return self._format_product_family_details(
                 products,
@@ -1299,8 +1497,7 @@ class ProductToolMixin:
     def _price_verdict(priced: list[tuple[str, Decimal]]) -> str | None:
         """用已登记的公开套装价给出确定性对比结论；不足两个有价型号就不下结论。
 
-        两条执行路径（旧链路与 V2）取出价格的方式不同，但结论的措辞和判断必须一致，
-        所以判断逻辑放在这里共用，各自只负责把自己的结果整理成 (型号, 价格)。
+        价格来自结构化数值字段，只有登记了至少两个型号价格时才下确定性结论。
         """
         priced = [(model, price) for model, price in priced if price is not None]
         if len(priced) < 2:
@@ -1313,21 +1510,6 @@ class ProductToolMixin:
             f"对比：{highest[0]} 的套装价最高（{highest[1]:.2f}元），"
             f"{lowest[0]} 最低（{lowest[1]:.2f}元）。"
         )
-
-    def _comparison_verdict(self, products: list[BusinessResult]) -> str | None:
-        """旧链路：从已登记产品的文本字段里取公开套装价。"""
-        priced: list[tuple[str, Decimal]] = []
-        for product in products:
-            fields = self._product_field_map(product)
-            model = str(fields.get("产品型号") or product.title)
-            match = re.search(r"\d+(?:\.\d+)?", str(fields.get("套装价") or ""))
-            if not match:
-                continue
-            try:
-                priced.append((model, Decimal(match.group())))
-            except InvalidOperation:
-                continue
-        return self._price_verdict(priced)
 
     @staticmethod
     def _v2_comparison_verdict(items: list[dict[str, object]]) -> str | None:
@@ -1343,106 +1525,26 @@ class ProductToolMixin:
                 continue
         return ProductToolMixin._price_verdict(priced)
 
-    def _answer_product_legacy(
-        self,
-        user_id: str,
-        original_query: str,
-        search_query: str,
-        decision: IntentDecision,
-        product_query: ProductQuery | None = None,
-        prefetched_embedding: list[float] | None = None,
-        can_view_cost: bool = False,
-        cost_access_message: str = "你当前没有查看成本价和采购价的权限。",
-        **_: object,
-    ) -> RoutedReply:
-        catalog_page = self._catalog_page_reply(
-            user_id,
-            original_query,
-            can_view_cost=can_view_cost,
-            cost_access_message=cost_access_message,
-        )
-        if catalog_page is not None:
-            return catalog_page
-        if product_query is not None and product_query.operation in {"list", "compare"}:
-            return self._structured_catalog(
-                user_id,
-                product_query,
-                can_view_cost=can_view_cost,
-                cost_access_message=cost_access_message,
-            )
-        if product_query is None and (
-            is_product_catalog_query(original_query) or is_product_catalog_query(search_query)
-        ):
-            # Compatibility for direct internal callers; graph execution always supplies
-            # a structured product query.
-            product_query = ProductQuery(operation="list")
-            return self._structured_catalog(
-                user_id,
-                product_query,
-                can_view_cost=can_view_cost,
-                cost_access_message=cost_access_message,
-            )
-        if product_query is not None and product_query.include_models:
-            search_query = " ".join((*product_query.include_models, search_query))
-            prefetched_embedding = None
-        settings = self._business_settings()
-        embedding = prefetched_embedding
-        if (
-            embedding is None
-            and getattr(settings, "embedding_api_key", None)
-            and getattr(settings, "embedding_model", None)
-        ):
-            try:
-                embedding = self._business_rag_agent().embed(
-                    [" ".join(search_query.split())[:500]]
-                )[0]
-            except Exception as exc:
-                logger.warning("product_embedding_failed", error_type=type(exc).__name__)
-        try:
-            product, clarification = self._resolve_product(
-                user_id,
-                original_query,
-                search_query,
-                decision,
-                embedding,
-                allow_family_overview=True,
-                requested_fields=(
-                    product_query.fields
-                    if product_query is not None and product_query.fields
-                    else None
-                ),
-                can_view_cost=can_view_cost,
-                cost_access_message=cost_access_message,
-            )
-        except Exception as exc:
-            logger.error("product_search_failed", error_type=type(exc).__name__)
-            return RoutedReply(decision.intent, "产品资料查询暂时不可用，请稍后重试。", [])
-        if clarification:
-            return clarification
-        try:
-            media = self.store.media_for_product(product.source_id)
-        except Exception as exc:
-            logger.error("product_media_lookup_failed", error_type=type(exc).__name__)
-            media = []
-        display_query = search_query if decision.source == "conversation_state" else original_query
-        return self._format_product_detail(
-            product,
-            media,
-            display_query,
-            requested_fields=(
-                product_query.fields if product_query is not None and product_query.fields else None
-            ),
-            can_view_cost=can_view_cost,
-            cost_access_message=cost_access_message,
-        )
-
     @staticmethod
     def _v2_source(item: dict[str, object]) -> dict[str, object]:
+        public_fields = (
+            ("产品型号", item.get("model")),
+            ("系列", item.get("series")),
+            ("材质", item.get("material")),
+            ("档位", item.get("spray_modes")),
+            ("颜色", item.get("color")),
+            ("套装价", item.get("set_price")),
+            ("主体价", item.get("body_price")),
+        )
         return {
             "source_type": "product",
             "source_id": str(item["id"]),
             "title": str(item.get("model") or ""),
-            "content": "",
+            # Only public fields enter source metadata. Cost, supplier and component
+            # purchase prices remain excluded even for authorized answers.
+            "content": "；".join(
+                f"{label}：{value}" for label, value in public_fields if value not in (None, "")
+            ),
             "score": 1.0,
         }
 
@@ -1461,9 +1563,8 @@ class ProductToolMixin:
         """备注里混着装箱规格和内部信息（供应商、单价），只对外给出装箱规格。
 
         61 款产品里有 5 款的备注形如「10只装；止水阀*2：供应商圣冠，单价0.27元」。
-        装箱规格是客户会问的（几只装），内部单价不是。旧链路按「；」切分渲染后的文本、
-        恰好只显示了第一段，属于侥幸；V2 直接读库里的整列，会把单价原样显示给
-        没有成本权限的人。所以这里按段过滤：无权限时丢掉含内部信息的段。
+        装箱规格是客户会问的（几只装），内部单价不是。这里按段过滤备注：
+        无权限时丢掉含内部信息的段。
         """
         text = str(value or "").strip()
         if not text or can_view_cost:
@@ -1500,7 +1601,7 @@ class ProductToolMixin:
         can_view_cost: bool,
     ) -> RoutedReply:
         if not result.items:
-            return RoutedReply(Intent.PRODUCT, "当前没有符合条件的已发布产品。", [])
+            return RoutedReply(Intent.PRODUCT, "产品库中没有找到对应产品。", [])
         requested = tuple(
             dict.fromkeys(item.field for item in product_query.effective_field_requests())
         )
@@ -1790,14 +1891,25 @@ class ProductToolMixin:
         *,
         can_view_cost: bool,
     ) -> RoutedReply | None:
-        """V2 路径下的产品目录翻页。
-
-        与旧链路的 `_catalog_page_reply` 不同：这里不缓存产品 id，也不复用旧格式器，
-        而是拿着上次的查询条件与页码，按当前模式再查一次下一页。这样第 1 页和第 2 页
-        用的是同一个格式器，不会出现两种排版混在一起。
-        """
-        context = self._state_get(self._product_catalog_context, user_id)
-        if not isinstance(context, dict) or context.get("mode") != "v2":
+        """按上次的结构化查询条件重新执行产品目录翻页。"""
+        focus = self._get_product_focus(user_id)
+        context = (
+            {
+                "mode": "v2",
+                "query": focus.query_plan,
+                "page": focus.page,
+                "total": focus.total,
+                "ids": list(focus.result_ids),
+                "expires_at": focus.expires_at,
+            }
+            if focus is not None
+            and focus.query_plan is not None
+            and focus.mode == "list"
+            else self._state_get(self._product_catalog_context, user_id)
+        )
+        if not self._query_context_valid(context) or context.get("mode") != "v2":
+            if isinstance(context, dict):
+                self._state_pop(self._product_catalog_context, user_id)
             return None
         direction = self._catalog_page_direction(query)
         target = self._catalog_page_target(query)
@@ -1826,9 +1938,20 @@ class ProductToolMixin:
         if not result.items:
             self._state_pop(self._product_catalog_context, user_id)
             return RoutedReply(Intent.PRODUCT, "当前产品目录已没有可展示的产品。", [])
-        context["page"] = next_page
-        self._product_catalog_context[user_id] = context
-        return self._format_product_v2(result, paged, can_view_cost=can_view_cost)
+        self._write_product_focus(
+            user_id,
+            mode="list",
+            query=replace(base, page=next_page),
+            page=next_page,
+            items=[dict(item) for item in result.items],
+            total=result.total,
+        )
+        return self._govern_page_reply(
+            self._format_product_v2(result, paged, can_view_cost=can_view_cost),
+            user_id=user_id,
+            query=paged,
+            result=result,
+        )
 
     def _v2_aggregate_page_reply(
         self,
@@ -1843,8 +1966,23 @@ class ProductToolMixin:
         翻页时用同样条件重算一次。这样库里改了产品，翻到的那页也是新的，
         不会出现"缓存的那几种"和当前库对不上。
         """
-        context = self._state_get(self._product_catalog_context, user_id)
-        if not isinstance(context, dict) or context.get("mode") != "v2_aggregate":
+        focus = self._get_product_focus(user_id)
+        context = (
+            {
+                "mode": "v2_aggregate",
+                "query": focus.query_plan,
+                "page": focus.page,
+                "total_values": focus.total,
+                "expires_at": focus.expires_at,
+            }
+            if focus is not None
+            and focus.query_plan is not None
+            and focus.mode == "aggregate"
+            else self._state_get(self._product_catalog_context, user_id)
+        )
+        if not self._query_context_valid(context) or context.get("mode") != "v2_aggregate":
+            if isinstance(context, dict):
+                self._state_pop(self._product_catalog_context, user_id)
             return None
         direction = self._catalog_page_direction(query)
         target = self._catalog_page_target(query)
@@ -1874,9 +2012,87 @@ class ProductToolMixin:
         if reply is None:
             self._state_pop(self._product_catalog_context, user_id)
             return None
-        context["page"] = next_page
-        self._product_catalog_context[user_id] = context
-        return reply
+        self._write_product_focus(
+            user_id,
+            mode="aggregate",
+            query=replace(base, page=next_page),
+            page=next_page,
+            total=total_values,
+        )
+        trace = dict(reply.execution_trace or {})
+        total_values = int(trace.get("total_values") or total_values)
+        page_size = _AGGREGATE_PAGE_SIZE
+        envelope = render_envelope(
+            ResponseEnvelope(
+                request_id=f"internal:{user_id}",
+                status="fact",
+                content=reply.content,
+                result=QueryResult(
+                    total_count=total_values,
+                    page=next_page,
+                    page_size=page_size,
+                    has_more=next_page * page_size < total_values,
+                    requested_fields=(base.aggregate.field,),
+                    operation="aggregate",
+                ),
+                evidence=tuple(reply.sources),
+                context_mode=base.context_mode,
+            ),
+            policy=OutputPolicy(),
+        )
+        trace["response_envelope"] = envelope.to_dict()
+        trace["response_validation"] = [
+            {"code": item.code, "message": item.message}
+            for item in validate_response_envelope(envelope)
+        ]
+        return replace(reply, content=envelope.content, execution_trace=trace)
+
+    def _answer_product_count(self, query: ProductQuery, *, can_view_cost: bool) -> RoutedReply:
+        """Count matching products and show the first page of their catalog rows."""
+        count_query = replace(
+            query, page=1, page_size=_CATALOG_PAGE_SIZE, result_scope="all_matches"
+        )
+        listing_query = replace(count_query, operation="list", allow_overview=True)
+        result = self.store.query_products_v2(
+            count_query,
+            include_sensitive=can_view_cost,
+        )
+        total = int(result.total)
+        if total == 0:
+            content = "当前没有符合条件的产品。"
+            sources: list[dict[str, object]] = []
+            listing_content = ""
+        else:
+            listing_reply = self._format_product_v2(
+                result, listing_query, can_view_cost=can_view_cost
+            )
+            content = f"当前共有 {total} 种产品。\n\n{listing_reply.content}"
+            sources = listing_reply.sources
+            listing_content = listing_reply.content
+        return RoutedReply(
+            Intent.PRODUCT,
+            content,
+            sources,
+            execution_trace={
+                "total": total,
+                "returned_count": len(result.items),
+                "operation": "count",
+                "page": 1,
+                "page_size": _CATALOG_PAGE_SIZE,
+                "listing": True,
+                "listing_query": product_query_to_dict(listing_query),
+                "listing_items": [dict(item) for item in result.items],
+                "listing_content": listing_content,
+                "filters": [
+                    {
+                        "field": item.field,
+                        "operator": item.operator,
+                        "value": item.value,
+                    }
+                    for item in query.filters
+                ],
+            },
+        )
 
     def _answer_product_aggregate(
         self, query: ProductQuery, *, can_view_cost: bool, page: int = 1
@@ -2026,10 +2242,14 @@ class ProductToolMixin:
         *,
         can_view_cost: bool,
         cost_access_message: str,
-        shadow: bool = False,
     ) -> RoutedReply:
-        state = self._product_shadow_query_context if shadow else self._product_query_context
-        saved = self._state_get(state, user_id)
+        focus = self._get_product_focus(user_id)
+        state = self._product_query_context
+        saved = (
+            {"plan": focus.query_plan}
+            if focus is not None and focus.query_plan is not None
+            else self._state_get(state, user_id)
+        )
         trusted = product_query_from_dict(saved.get("plan")) if isinstance(saved, dict) else None
         product_query = replace(
             product_query,
@@ -2053,7 +2273,9 @@ class ProductToolMixin:
             product_query = replace(product_query, context_mode="independent")
             saved = None
             trusted = None
+            self._state_pop(self._product_focus, user_id)
             self._state_pop(state, user_id)
+            self._state_pop(self._product_catalog_context, user_id)
         product_query = self._prepare_product_query_v2(
             user_id, original_query, product_query, saved=saved
         )
@@ -2062,10 +2284,41 @@ class ProductToolMixin:
             original_query,
             can_view_cost=can_view_cost,
             trusted_context=trusted,
+            trusted_focus=focus,
         )
         trace: dict[str, object] = {
             "planner_version": "product-query-v2",
             "query_plan": product_query_to_dict(validation.query),
+            "execution_conditions": {
+                "operation": validation.query.operation,
+                "executor": (
+                    "product_count_v1"
+                    if validation.query.operation == "count"
+                    else "product_aggregate_v1"
+                    if validation.query.operation == "aggregate"
+                    else "product_catalog_builder_v2"
+                ),
+                "read_only": True,
+                "parameterized": True,
+                "page": validation.query.page,
+                "page_size": validation.query.page_size,
+                "references": [
+                    {"kind": item.kind, "value": item.value}
+                    for item in validation.query.effective_references()
+                ],
+                "filters": [
+                    {
+                        "field": item.field,
+                        "operator": item.operator,
+                        "value": (
+                            "[redacted]"
+                            if item.field in {"cost_price"} and not can_view_cost
+                            else item.value
+                        ),
+                    }
+                    for item in validation.query.filters
+                ],
+            },
             "validation": {
                 "errors": list(validation.errors),
                 "removed_fields": list(validation.removed_fields),
@@ -2078,6 +2331,43 @@ class ProductToolMixin:
                 "field_semantics_version": 2,
             },
         }
+        ordinal = ordinal_index(original_query)
+        resolved_id = (
+            product_query.resolved_product_ids[0]
+            if product_query.resolved_product_ids
+            else None
+        )
+        resolved_model = None
+        if focus is not None and resolved_id in focus.result_ids:
+            resolved_index = focus.result_ids.index(resolved_id)
+            if resolved_index < len(focus.result_models):
+                resolved_model = focus.result_models[resolved_index]
+        trace["focus"] = {
+            "mode": focus.mode if focus is not None else None,
+            "hit": focus is not None,
+            "age_seconds": (
+                max(0.0, time.time() - focus.created_at)
+                if focus is not None and focus.created_at
+                else None
+            ),
+            "expired": bool(focus is not None and not focus.is_valid()),
+            "result_count": len(focus.result_ids) if focus is not None else 0,
+            "result_ids": list(focus.result_ids) if focus is not None else [],
+            "result_models": list(focus.result_models) if focus is not None else [],
+            "ordinal_marker": ordinal[1] if ordinal else None,
+            "ordinal_index": (ordinal[0] + 1) if ordinal else None,
+            "resolved_product_id": resolved_id,
+            "resolved_product_model": resolved_model,
+            "field_source": next(
+                (
+                    str(item.source)
+                    for item in product_query.effective_field_requests()
+                    if item.field
+                ),
+                None,
+            ),
+        }
+        trace["query_plan"]["focus"] = trace["focus"]
 
         def finish(reply: RoutedReply, result_type: str, reason: str = "") -> RoutedReply:
             trace["outcome"] = product_outcome(
@@ -2086,19 +2376,108 @@ class ProductToolMixin:
                 result_type=result_type,
                 reason=reason,
             )
+            execution = dict(trace.get("execution") or {})
+            reply_execution = dict(reply.execution_trace or {})
+            for key in (
+                "total",
+                "total_values",
+                "total_pages",
+                "returned_count",
+                "page",
+                "page_size",
+                "listing",
+            ):
+                if key in reply_execution and key not in execution:
+                    execution[key] = reply_execution[key]
+            if trace.get("focus") is not None:
+                execution["focus"] = trace["focus"]
+            trace["execution"] = execution
+            # All product replies expose the same machine-readable result contract.
+            # Rendering remains deterministic and bounded even when a legacy formatter
+            # produced a long field or a multi-task merge.
+            total = int(
+                execution.get("total_values")
+                or execution.get("total")
+                or execution.get("total_count")
+                or 0
+            )
+            page = int(execution.get("page") or 1)
+            operation = str(validation.query.operation)
+            page_size = int(
+                execution.get("page_size")
+                or (10 if operation == "aggregate" else 1 if operation == "count" else 0)
+            )
+            has_more = (
+                (operation != "count" or bool(execution.get("listing")))
+                and page_size > 0
+                and page * page_size < total
+            )
+            fingerprint = query_fingerprint(product_query_to_dict(validation.query))
+            cursor = (
+                _CURSOR_CODEC.encode(
+                    user_id=user_id,
+                    query_fingerprint=fingerprint,
+                    page=page + 1,
+                )
+                if has_more
+                else None
+            )
+            envelope = ResponseEnvelope(
+                request_id=f"internal:{user_id}",
+                status=result_type,
+                content=reply.content,
+                result=QueryResult(
+                    total_count=total,
+                    page=page,
+                    page_size=page_size,
+                    has_more=has_more,
+                    cursor=cursor,
+                    requested_fields=tuple(validation.query.fields),
+                    operation=operation,
+                ) if execution else None,
+                evidence=tuple(reply.sources),
+                context_mode=validation.query.context_mode,
+                ambiguity=tuple(item.code for item in validation.ambiguities),
+                permission={
+                    "denied_fields": list(validation.permission_denied_fields),
+                    "source": "identity_context",
+                },
+                validation=trace["validation"],
+                metadata={
+                    "planner_version": trace["planner_version"],
+                    "query_version": validation.query.version,
+                    "field_semantics_version": 2,
+                },
+            )
+            envelope = render_envelope(envelope, policy=OutputPolicy())
+            trace["response_envelope"] = envelope.to_dict()
+            trace["response_validation"] = [
+                {"code": item.code, "message": item.message}
+                for item in validate_response_envelope(envelope)
+            ]
+            reply = replace(reply, content=envelope.content)
+            logger.info(
+                "product_query_execution",
+                original_query=redact_log_message(original_query[:500]),
+                route_intent=str(Intent.PRODUCT),
+                operation=str(validation.query.operation),
+                filters=trace["execution_conditions"]["filters"],
+                validation_result=trace["validation"],
+                execution_conditions=trace["execution_conditions"],
+                returned_count=execution.get("total", execution.get("returned_count", 0)),
+                final_status=result_type,
+            )
             return replace(reply, execution_trace=trace)
 
         if validation.ambiguities:
             ambiguity = validation.ambiguities[0]
-            # shadow 运行提出的澄清不会交付给员工，因此不写槽位、也不写正式上下文。
-            if not shadow:
-                pending.remember_product_query(
-                    self,
-                    user_id,
-                    validation.query,
-                    ambiguity.question,
-                    option_labels=tuple(ambiguity.options),
-                )
+            pending.remember_product_query(
+                self,
+                user_id,
+                validation.query,
+                ambiguity.question,
+                option_labels=tuple(ambiguity.options),
+            )
             choices = "、".join(ambiguity.options)
             return finish(
                 RoutedReply(
@@ -2157,6 +2536,30 @@ class ProductToolMixin:
         # 必须在执行之前：模型给的字段可能猜错（同一个颜色被猜成 series / description），
         # 字符串写法也可能对不上（"灰玻璃枪灰" vs "灰玻璃·枪灰"），两者都会静默返回 0 款。
         query = self._resolve_product_filter_values(query)
+        if query.operation == "count":
+            count_reply = self._answer_product_count(query, can_view_cost=can_view_cost)
+            listing_items = count_reply.execution_trace.get("listing_items") or []
+            listing_query = query
+            if count_reply.execution_trace.get("listing"):
+                try:
+                    listing_query = product_query_from_dict(
+                        count_reply.execution_trace.get("listing_query")
+                    ) or query
+                except Exception:  # noqa: BLE001
+                    listing_query = query
+            self._write_product_focus(
+                user_id,
+                mode="list" if listing_items else "count",
+                query=listing_query,
+                items=[dict(item) for item in listing_items if isinstance(item, dict)],
+                page=1,
+                total=int(count_reply.execution_trace.get("total") or 0),
+            )
+            return finish(
+                count_reply,
+                "fact" if count_reply.execution_trace.get("total") is not None else "no_result",
+                "",
+            )
         if query.operation == "aggregate":
             aggregate_reply = self._answer_product_aggregate(
                 query, can_view_cost=can_view_cost
@@ -2164,15 +2567,14 @@ class ProductToolMixin:
             if aggregate_reply is not None:
                 # 记录本次统计，供「下一页」使用。与产品清单同样只记住条件与页码，
                 # 翻页时重算，避免缓存的取值列表与当前库脱节。
-                # 与清单一致：shadow 是观测，不写正式上下文，否则会盖掉旧链路那份。
                 page_info = dict(aggregate_reply.execution_trace or {})
-                if not shadow and page_info.get("total_values"):
-                    self._product_catalog_context[user_id] = {
-                        "mode": "v2_aggregate",
-                        "query": product_query_to_dict(query),
-                        "page": int(page_info.get("page") or 1),
-                        "total_values": int(page_info["total_values"]),
-                    }
+                self._write_product_focus(
+                    user_id,
+                    mode="aggregate",
+                    query=query,
+                    page=int(page_info.get("page") or 1),
+                    total=int(page_info.get("total_values") or 0),
+                )
                 return finish(
                     replace(aggregate_reply, execution_trace=trace),
                     "fact",
@@ -2212,6 +2614,23 @@ class ProductToolMixin:
                 "clarification",
                 "all_requested_fields_removed" if query.original_fields else "unspecified_fields",
             )
+        if (
+            query.operation == "list"
+            and not query.effective_references()
+            and not query.filters
+            and not query.effective_field_requests()
+            and not query.allow_overview
+        ):
+            return finish(
+                RoutedReply(
+                    Intent.PRODUCT,
+                    "请指定产品条件（如颜色、材质或型号），我再为你查询产品列表。",
+                    [],
+                    execution_trace=trace,
+                ),
+                "clarification",
+                "unspecified_list_scope",
+            )
         if query.operation == "detail" and not query.effective_references():
             return finish(
                 RoutedReply(
@@ -2226,6 +2645,8 @@ class ProductToolMixin:
         if query.operation == "detail" and not query.effective_field_requests():
             query = replace(query, page_size=1)
         trace["query_plan"] = product_query_to_dict(query)
+        if "focus" in trace:
+            trace["query_plan"]["focus"] = trace["focus"]
         result = self.store.query_products_v2(query, include_sensitive=can_view_cost)
         # 员工写全型号时，精确命中必须优先于「只是包含它」的变体，否则：
         #   「LY0653GDT 的材质」→ 命中 LY0653GDT / -T / -Y，直接答案退化成一串同系列列表；
@@ -2237,8 +2658,7 @@ class ProductToolMixin:
         if references and result.total == 0 and all(item.kind == "exact" for item in references):
             # 模型会把「0653」这类系列前缀标成 exact，而它其实是片段：等值匹配查不到任何东西，
             # 于是「0653 和 0689 哪个便宜」答成「没有符合条件的产品」。
-            # 精确匹配一无所获时退回片段匹配——旧链路的 mentions_identifier_alias 本来就有
-            # 这层兜底，放在这里对两条路径都成立，也不依赖模型把 kind 标对。
+            # 精确匹配一无所获时退回片段匹配，避免模型把系列前缀误标为 exact。
             loosened_query = replace(
                 query,
                 references=tuple(replace(item, kind="fragment") for item in query.references),
@@ -2278,25 +2698,22 @@ class ProductToolMixin:
             verdict = self._v2_comparison_verdict(result.items)
             if verdict:
                 reply = replace(reply, content=f"{reply.content}\n\n{verdict}")
+        if not result.items:
+            # A successful empty query must not leave the previous displayed
+            # list available for a later ordinal reference.
+            self._write_product_focus(
+                user_id,
+                mode="list" if query.operation == "list" else "detail",
+                query=query,
+                items=[],
+                page=result.page,
+                total=result.total,
+            )
         # 只要**给员工看了多款产品**就记下上下文，不按操作名判断。
         # 此前要求 operation == "list"，但「0653 的材质」这类片段型号会让模型给出
         # op=detail + 一个片段引用，渲染出来同样是一份 5 款的家族清单；
         # 于是紧接着的「第3页」读不到上下文、落到模型手里去猜（有时反问、有时拒答），
         # 而明确的答案是「产品目录只有 1 页」。翻页判定只对翻页词生效，记下来不干扰别的提问。
-        if not shadow and (query.operation == "list" or result.total > 1):
-            # 记录本次清单，供「下一页」使用。旧的翻页状态是「缓存全部产品 id」，
-            # 那只由旧链路写入，于是 on 模式下翻页判定读不到上下文、直接掉进通用问答。
-            # V2 走 SQL 分页，只需记住查询条件与页码，翻页时用同样条件取下一页即可，
-            # 也避免缓存 id 与库内容脱节。
-            #
-            # 必须限定非 shadow：影子比较是观测，它写入的 "v2" 形态上下文会覆盖旧链路
-            # 写入的那份（旧的那份带 ids），于是 shadow 下紧接着的「下一页」反而翻不动。
-            self._product_catalog_context[user_id] = {
-                "mode": "v2",
-                "query": product_query_to_dict(query),
-                "page": query.page or 1,
-                "total": result.total,
-            }
         if validation.permission_denied_fields:
             reply = replace(reply, content=f"{reply.content}\n{cost_access_message}")
         if validation.removed_fields and query.operation == "detail":
@@ -2306,66 +2723,25 @@ class ProductToolMixin:
             # 一份完整成功的 12 款清单后面跟了一句"另有字段未能可靠确认，请补充说明"）。
             reply = replace(reply, content=f"{reply.content}\n另有字段未能可靠确认，请补充说明。")
         selected_ids = [str(item["id"]) for item in result.items]
-        if not shadow:
-            state[user_id] = {
-                "plan": product_query_to_dict(query),
-                "selected_product_ids": selected_ids,
-                "page": result.page,
-            }
-        if len(selected_ids) == 1 and not shadow:
+        if query.operation == "list" or result.total > 1 or selected_ids:
+            self._write_product_focus(
+                user_id,
+                mode="list" if query.operation == "list" or result.total > 1 else "detail",
+                query=query,
+                items=[dict(item) for item in result.items],
+                page=result.page,
+                total=result.total,
+            )
+        if len(selected_ids) == 1:
             self._remember_product(user_id, selected_ids[0])
         trace["execution"] = {
             "total": result.total,
             "page": result.page,
             "page_size": result.page_size,
+            "returned_count": len(result.items),
             "product_ids": selected_ids,
         }
         return finish(reply, "fact" if result.items else "no_result")
-
-    @staticmethod
-    def _shadow_diff(legacy: RoutedReply, v2: RoutedReply) -> dict[str, object]:
-        legacy_ids = sorted(
-            str(item.get("source_id") or item.get("id") or "")
-            for item in legacy.sources
-            if item.get("source_type") == "product"
-        )
-        v2_ids = sorted(
-            str(item.get("source_id") or item.get("id") or "")
-            for item in v2.sources
-            if item.get("source_type") == "product"
-        )
-        old = legacy.execution_trace.get("outcome") or product_outcome(legacy)
-        new = v2.execution_trace.get("outcome") or product_outcome(v2)
-        comparisons = {
-            "same_known_result": old["result_type"] != "unknown"
-            and new["result_type"] != "unknown",
-            "same_result_type": old["result_type"] == new["result_type"],
-            "same_requested_fields": old["requested_fields"] == new["requested_fields"],
-            "same_answered_fields": old["answered_fields"] == new["answered_fields"],
-            # Compare sensitive values transiently; persist only the boolean and redacted summaries.
-            "same_content": canonical_product_content(legacy.content)
-            == canonical_product_content(v2.content),
-            "same_permissions": old["permission_denied"] == new["permission_denied"],
-        }
-        return {
-            "schema_version": 2,
-            "same_product_ids": legacy_ids == v2_ids,
-            "legacy_product_ids": legacy_ids,
-            "v2_product_ids": v2_ids,
-            "legacy_source_count": len(legacy.sources),
-            "v2_source_count": len(v2.sources),
-            **comparisons,
-            "same_semantics": legacy_ids == v2_ids and all(comparisons.values()),
-            "delivered_engine": "legacy",
-            "legacy_outcome": old,
-            "v2_outcome": new,
-            "v2_validation": v2.execution_trace.get("validation", {}),
-            "v2_execution": v2.execution_trace.get("execution", {}),
-            "differences": [
-                key.removeprefix("same_") for key, same in comparisons.items() if not same
-            ]
-            + ([] if legacy_ids == v2_ids else ["product_ids"]),
-        }
 
     def _answer_product(
         self,
@@ -2376,8 +2752,6 @@ class ProductToolMixin:
         product_query: ProductQuery | None = None,
         **kwargs: object,
     ) -> RoutedReply:
-        settings = self._business_settings()
-        mode = getattr(settings, "product_query_v2_mode", "shadow")
         can_view_cost = bool(kwargs.get("can_view_cost", False))
         cost_access_message = str(
             kwargs.get(
@@ -2385,131 +2759,64 @@ class ProductToolMixin:
                 "你当前没有查看成本价和采购价的权限。",
             )
         )
-        if mode == "on" and product_query is not None:
-            # 翻页必须先处理：旧链路在入口就调 _catalog_page_reply，on 路径此前完全没调，
-            # 于是「下一页」在 on 下要么不翻页、要么落进通用问答。
-            catalog_page = self._v2_catalog_page_reply(
-                user_id, original_query, can_view_cost=can_view_cost
-            )
-            if catalog_page is not None:
-                return catalog_page
-            # 统计结果的翻页与清单翻页是两套上下文（一个翻产品、一个翻取值），
-            # 都先于计划执行处理，免得「下一页」落到模型手里去猜。
-            aggregate_page = self._v2_aggregate_page_reply(
-                user_id, original_query, can_view_cost=can_view_cost
-            )
-            if aggregate_page is not None:
-                return aggregate_page
-            # 规则构造的筛选、模糊检索和推荐不可信，一律拒绝执行。
-            # 但「对比」只要引用了两个明确型号就是确定性操作，规则也能安全构造；
-            # 少于两个引用时才算「规则猜出来的对比」，仍然拒绝。
-            # 这一条曾经把 on 模式下的对比提问全部拒掉，而 shadow 下它们本来是能答的。
-            unsafe_fallback = decision.source not in {
-                "planner_model",
-                "product_query_context",
-                "conversation_state",
-            } and (
-                bool(product_query.filters)
-                or product_query.operation in {"search", "recommend"}
-                or (
-                    product_query.operation == "compare"
-                    and len(product_query.effective_references()) < 2
-                )
-            )
-            if unsafe_fallback:
-                return RoutedReply(
-                    Intent.PRODUCT,
-                    "复杂产品筛选暂时无法安全解析，请稍后重试。",
-                    [],
-                )
-            try:
-                return self._answer_product_v2(
-                    user_id,
-                    original_query,
-                    product_query,
-                    can_view_cost=can_view_cost,
-                    cost_access_message=cost_access_message,
-                )
-            except Exception as exc:
-                logger.error("product_query_v2_failed", error_type=type(exc).__name__)
-                return RoutedReply(
-                    Intent.PRODUCT,
-                    "产品资料查询暂时不可用，请稍后重试。",
-                    [],
-                )
-
-        legacy = self._answer_product_legacy(
-            user_id,
-            original_query,
-            search_query,
-            decision,
-            product_query=product_query,
-            **kwargs,
+        product_query = product_query or ProductQuery()
+        # Keep the builder -> tool contract explicit even for alternate callers
+        # that provide the structured fields separately from the query object.
+        declared_operation = kwargs.get("operation")
+        declared_filters = kwargs.get("filters")
+        if isinstance(declared_operation, str) and declared_operation:
+            product_query = replace(product_query, operation=declared_operation)
+        if isinstance(declared_filters, (tuple, list)):
+            product_query = replace(product_query, filters=tuple(declared_filters))
+        # 翻页必须先处理，避免把“下一页”重新交给模型猜测。
+        catalog_page = self._v2_catalog_page_reply(
+            user_id, original_query, can_view_cost=can_view_cost
         )
-        if mode != "shadow" or product_query is None:
-            return legacy
+        if catalog_page is not None:
+            return catalog_page
+        aggregate_page = self._v2_aggregate_page_reply(
+            user_id, original_query, can_view_cost=can_view_cost
+        )
+        if aggregate_page is not None:
+            return aggregate_page
+        # 规则降级只能执行确定性查询；复杂筛选、推荐和不完整对比必须澄清。
+        unsafe_fallback = decision.source not in {
+            "planner_model",
+            "product_query_context",
+            "conversation_state",
+        } and (
+            bool(product_query.filters)
+            or product_query.operation in {"search", "recommend"}
+            or (
+                product_query.operation == "compare"
+                and len(product_query.effective_references()) < 2
+            )
+        )
+        if unsafe_fallback:
+            return RoutedReply(
+                Intent.PRODUCT,
+                "复杂产品筛选暂时无法安全解析，请稍后重试。",
+                [],
+            )
         try:
-            legacy_fields = product_query.fields or tuple(
-                item.field for item in fallback_field_requests(original_query)
-            )
-            legacy = replace(
-                legacy,
-                execution_trace={
-                    **legacy.execution_trace,
-                    "outcome": product_outcome(legacy, requested_fields=legacy_fields),
-                },
-            )
-            if not callable(getattr(self.store, "query_products_v2", None)):
-                # The store cannot compile V2 queries at all (offline fixtures), so
-                # there is nothing to compare against. Record the skip explicitly
-                # rather than raising and logging an error on every product request.
-                self._state_pop(self._product_shadow_query_context, user_id)
-                return replace(
-                    legacy,
-                    execution_trace={
-                        **legacy.execution_trace,
-                        "planner_version": "product-query-v2",
-                        "shadow_diff": {"skipped": "store_without_query_products_v2"},
-                    },
-                )
-            shadow = self._answer_product_v2(
+            return self._answer_product_v2(
                 user_id,
                 original_query,
                 product_query,
                 can_view_cost=can_view_cost,
                 cost_access_message=cost_access_message,
-                shadow=True,
             )
-            trace = dict(shadow.execution_trace)
-            trace["shadow_diff"] = self._shadow_diff(legacy, shadow)
-            # Only inherit a shadow answer that the employee actually saw.
-            if trace["shadow_diff"]["same_semantics"] and trace.get("execution"):
-                self._product_shadow_query_context[user_id] = {
-                    "plan": trace.get("query_plan", {}),
-                }
-            else:
-                self._state_pop(self._product_shadow_query_context, user_id)
-            trace["delivered_engine"] = "legacy"
-            return replace(legacy, execution_trace=trace)
         except Exception as exc:
-            # Shadow comparison is observational: the employee still receives the
-            # legacy answer, so this must not fail the request. Record the message
-            # as well as the type — a bare error_type makes a silently skipped
-            # comparison (a store without query_products_v2, for example) very hard
-            # to diagnose from logs alone.
             logger.warning(
-                "product_query_v2_shadow_failed",
+                "product_query_v2_failed",
                 error_type=type(exc).__name__,
                 error=str(exc)[:200],
                 exc_info=True,
             )
-            self._state_pop(self._product_shadow_query_context, user_id)
-            return replace(
-                legacy,
-                execution_trace={
-                    "planner_version": "product-query-v2",
-                    "shadow_diff": {"error_type": type(exc).__name__},
-                },
+            return RoutedReply(
+                Intent.PRODUCT,
+                "产品资料查询暂时不可用，请稍后重试。",
+                [],
             )
 
     def index_product_record(self, product_id: str) -> int:

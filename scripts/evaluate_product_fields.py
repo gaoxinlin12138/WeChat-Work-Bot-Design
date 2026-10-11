@@ -67,12 +67,6 @@ def main() -> int:
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
-        "--v2-mode",
-        choices=("shadow", "on"),
-        default="shadow",
-        help="shadow 交付旧链路答案；on 交付 V2 答案，用于比较两者",
-    )
-    parser.add_argument(
         "--with-model",
         action="store_true",
         help=(
@@ -93,7 +87,7 @@ def main() -> int:
         if case["expected"]["domain"] == "product" and "policy-pending" not in case["tags"]
     ]
 
-    business = ReadOnlyBusiness(v2_mode=args.v2_mode, with_planner=args.with_model)
+    business = ReadOnlyBusiness(with_planner=args.with_model)
     results: list[dict[str, object]] = []
     for index, case in enumerate(product_cases, 1):
         allowed = case.get("cost_visibility") == "allowed"
@@ -153,7 +147,7 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "mode": f"rules-only-read-only-database-{args.v2_mode}",
+        "mode": "rules-only-read-only-database-v2",
         "limitations": [
             "离线规则路径：只代表模型不可用时的表现。",
             "只读会话执行：DSN 带 default_transaction_read_only=on，数据库会拒绝任何写入。",

@@ -55,7 +55,10 @@ python -m pip install -e ".[dev]"
 .venv\Scripts\python.exe -m scripts.setup_postgres
 ```
 
-该脚本会交互式读取数据库管理员密码，并可能重设同名数据库账号密码。已有环境不要把它当作日常启动或升级命令。
+该脚本会交互式读取数据库管理员密码，创建 `wecom_knowledge_bot` 数据库和 `wecom_bot` 专用账号，
+启用 `vector`、`pg_trgm` 扩展，并把真正的 `DATABASE_URL` 写入本机 `.database.env`。
+不需要手工编写表结构；应用首次连接时会幂等创建和补齐业务表。已有环境不要把初始化脚本当作日常启动或升级命令，
+因为它会重设同名应用账号密码。
 
 ## 配置
 
@@ -86,7 +89,6 @@ EMBEDDING_DIMENSIONS=1024
 
 # 复杂请求使用模型生成结构化计划；关闭后仍保留规则计划
 TASK_PLANNER_ENABLED=true
-PRODUCT_QUERY_V2_MODE=shadow
 
 # LangGraph 是唯一业务编排器；checkpoint 可按环境独立启用
 LANGGRAPH_CHECKPOINT_ENABLED=false
@@ -97,13 +99,16 @@ LANGGRAPH_CHECKPOINT_POOL_SIZE=4
 
 首次建表后不要直接修改 `EMBEDDING_DIMENSIONS`。更换向量维度需要迁移字段并重新生成全部向量。
 
-业务智能体统一由 LangGraph 的 `create_plan -> execute_task -> verify_results` 主链编排，
+业务智能体统一由 LangGraph 的
+`normalize_input -> create_plan -> execute_task -> verify_results -> finalize_reply` 主链编排，
 不再保留“单意图映射单节点”的旧主链。简单请求生成一个快速任务；包含多个明确目标的请求最多
 生成四个只读任务，按依赖顺序执行。模型只能从制度、通用资料、产品、媒体、话术和普通对话
-这些既有领域能力中规划任务，不能规划发布、修改或删除操作。模型计划解析失败时自动降级为规则计划。
+这些既有领域能力中规划任务，不能规划发布、修改或删除操作。执行结果先检查来源、权限和完整性，
+再合并成最终回复；模型计划解析失败时自动降级为规则计划。
 
-`PRODUCT_QUERY_V2_MODE` 支持 `off` / `shadow` / `on`。默认 `shadow` 保持旧答案对员工可见，
-同时只读执行 V2 的结构化计划、校验和参数化 SQL，差异写入识别记录。完成灰度验收前不应切换到 `on`。
+产品查询现在统一使用 V2 结构化链路：模型只负责提出结构化查询计划，Python 负责字段本体、
+证据校验、权限判断、参数化 SQL 和结果渲染。旧的 legacy、shadow、off 并行链路已经删除，
+不再存在两套产品答案之间的运行时切换。
 `LANGGRAPH_CHECKPOINT_ENABLED=true` 会在 PostgreSQL 中初始化 LangGraph checkpoint 表，必须在
 数据库备份和隔离环境验证完成后单独开启。企业微信 `msgid` 会作为幂等请求标识，thread id 按企业、
 机器人和会话隔离并哈希保存。
@@ -289,14 +294,15 @@ try {
 
 报告写入 `outputs/policy_pdf_eval_report.json`，检查真实已发布制度的 Top-5 文档、页码、内容和表格命中率，不调用答案生成模型，也不会写入聊天记录。
 
-切换产品查询 V2（`PRODUCT_QUERY_V2_MODE=on`）之前的两模式对照评测：
+产品查询验收统一运行 V2 结构化链路：
 
 ```powershell
 $env:RUN_READONLY_DATABASE_EVAL=1
-.venv\Scripts\python.exe -m scripts.evaluate_mode_parity
+.venv\Scripts\python.exe -m scripts.evaluate_product_fields
+.venv\Scripts\python.exe -m scripts.evaluate_context_inheritance
 ```
 
-同一批提问分别用 `shadow`（当前生产配置）和 `on` 跑一遍，按「员工实际问的字段」判断 `on` 是否漏答、是否越权、是否变成拒答。报告写入 `outputs/mode_parity_report.json`；有退化时以非零码退出。字段更少不算退化——少答与不问的字段无关的内容是正常行为。
+这两项分别检查字段完整性、敏感字段越权和多轮上下文越界；不再运行旧链路与 V2 的并行对照。
 
 ## 备份与恢复
 

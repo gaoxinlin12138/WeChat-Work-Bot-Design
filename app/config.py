@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env", ".database.env"),
         env_file_encoding="utf-8",
+        # Empty optional values in .env (for example an unset department id)
+        # should fall back to their Python defaults instead of failing startup.
+        env_ignore_empty=True,
         extra="ignore",
     )
 
@@ -69,7 +72,8 @@ class Settings(BaseSettings):
     rag_max_context_chars: int = Field(default=12000, ge=100, le=100000)
     task_planner_enabled: bool = True
     intent_confidence_threshold: float = Field(default=0.45, ge=0.0, le=1.0)
-    product_query_v2_mode: Literal["off", "shadow", "on"] = "shadow"
+    # Product queries use the validated V2 pipeline exclusively.  The former
+    # legacy/shadow switch was removed after the V2 cutover.
     langgraph_checkpoint_enabled: bool = False
     langgraph_checkpoint_pool_size: int = Field(default=4, ge=1, le=32)
 

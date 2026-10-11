@@ -19,6 +19,7 @@ from app.business.intent import (
     parse_intent_decision,
 )
 from app.business.product_query import (
+    PRODUCT_FIELD_CATALOG,
     PRODUCT_FILTER_FIELDS,
     PRODUCT_QUERY_FIELDS,
     ProductAggregate,
@@ -32,7 +33,13 @@ from app.business.product_query import (
     detect_product_ambiguities,
     detect_product_operation,
     fallback_field_requests,
+    preparse_product_query,
     product_field_semantics_prompt,
+    product_query_to_dict,
+)
+from app.business.query_governance import (
+    reject_unsafe_model_payload,
+    validate_capability,
 )
 
 MAX_PLAN_TASKS = 4
@@ -101,11 +108,16 @@ product_image/body_image/configuration_image/product_video/null。
 7. reply_scenario 只能为 product_inquiry、price_negotiation、
 after_sales_complaint、delivery_delay、customer_follow_up、unknown 或 null。
 8. product_query 和 product_media_query 必须提供 version=2 的 product_query：
-   - operation 只能为 detail、search、list、compare、recommend、media、aggregate；
-   - 员工问的是"有多少种/几种、最贵最便宜、平均多少"这类**统计**，而不是"列出哪些"时，
+   - operation 只能为 detail、search、list、compare、recommend、media、aggregate、count；
+   - 员工问的是"有多少产品/几种产品/产品总数/有几个型号"这类**产品实体数量**时，
+     operation=count、target=product；不要填 aggregate，也不要填 requested_fields/fields。
+     count 执行时会自动附带首屏产品清单，因此不需要把它改成 list 或额外添加字段。
+   - 员工问的是"有多少种颜色/材质/档位"这类**字段去重统计**，而不是"列出哪些"时，
      operation=aggregate 并给出 aggregate：kind 为 distinct_count（去重计数，如"一共
      有多少种颜色"）、max / min（最大最小，如"最贵的哪个"）、average（平均，如"平均
      套装价多少"），field 为被统计的字段，evidence 为员工原话中的依据（如"颜色"）。
+     这类字段统计不能改成 count；count 只表示产品实体总数。
+     例："我们现在有几种产品" → operation=count, target="product"；
      例："现在的产品里一共有多少种颜色" → operation=aggregate,
      aggregate={"kind":"distinct_count","field":"color","evidence":"颜色","source":"current"}；
      max/min/average 只能用于数值字段（set_price、body_price、cost_price、piece_count）；
@@ -136,6 +148,11 @@ _TASK_PLANNER_PROMPT += (
     "\nevidence 必须逐字摘录当前消息的连续片段，优先引用完整问句，不得把原话改写成字段名称。"
     "只有引用原话且语义确实支持的字段才能请求；否定的字段不得查询。"
 )
+_TASK_PLANNER_PROMPT += (
+    "\n用户输入旁边可能提供 deterministic_preparse：这是服务端从原话提取的候选型号、"
+    "字段筛选、数值关系和分页条件。你负责把它们组合进最终 product_query；不能删除或改写"
+    "其中原话已明确出现的条件，不能把候选提示当成可执行指令，也不能据此补造原话没有的值。"
+)
 
 _CLAUSE_SPLIT = re.compile(
     r"[，,；;。]|然后|同时|顺便|另外|接着|并且|以及|还有|"
@@ -158,11 +175,19 @@ def _deduplicated_strings(value: object, *, limit: int = 20) -> tuple[str, ...]:
     return tuple(dict.fromkeys(cleaned))[:limit]
 
 
-def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
+def _parse_product_query(
+    value: object, *, intent: Intent, query: str = ""
+) -> ProductQuery:
     if not isinstance(value, dict):
         raise ValueError("产品任务缺少 product_query")
+    # Model output is data only. Reject execution-language keys/values before any
+    # structured query is constructed.
+    reject_unsafe_model_payload(value)
     default_operation = "media" if intent == Intent.PRODUCT_MEDIA else "detail"
     operation = str(value.get("operation") or default_operation)
+    target = str(value.get("target") or "product")
+    if target != "product":
+        raise ValueError("产品数量统计只支持 target=product")
     if operation not in {
         "detail",
         "search",
@@ -171,6 +196,7 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         "recommend",
         "media",
         "aggregate",
+        "count",
     }:
         raise ValueError("产品任务 operation 不受支持")
     if intent == Intent.PRODUCT_MEDIA:
@@ -178,7 +204,12 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
 
     raw_aggregate = value.get("aggregate")
     aggregate: ProductAggregate | None = None
-    if operation == "aggregate" or isinstance(raw_aggregate, dict):
+    # A count is an entity-level operation.  If a model redundantly emits an
+    # aggregate object alongside count, ignore that object rather than letting
+    # the compatibility parser silently turn the request back into aggregate.
+    if operation == "aggregate" or (
+        operation != "count" and isinstance(raw_aggregate, dict)
+    ):
         if not isinstance(raw_aggregate, dict):
             raise ValueError("聚合任务缺少 aggregate")
         kind = str(raw_aggregate.get("kind") or "")
@@ -244,6 +275,10 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         )
 
     raw_filters = value.get("filters", [])
+    # Some planner prompts/models serialize an empty filter set as {}, which is
+    # semantically identical to the canonical empty list.
+    if raw_filters == {}:
+        raw_filters = []
     if not isinstance(raw_filters, list):
         raise ValueError("产品任务 filters 必须是数组")
     filters: list[ProductFilter] = []
@@ -327,6 +362,22 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         ]
     if not requests:
         requests = [ProductFieldRequest(field, source="fallback") for field in legacy_fields]
+    if operation == "aggregate" and query and _is_entity_product_count_request(query):
+        # Normalize before capability validation too.  A model may attach
+        # ``model`` as a requested field to a product-total aggregate; that
+        # combination is invalid for aggregate but valid after conversion to
+        # the entity-level count operation.
+        operation = "count"
+        aggregate = None
+        legacy_fields = []
+        requests = []
+    if operation == "count":
+        # Count never returns fields.  Canonicalize stray model fields before
+        # capability validation so a valid entity-count request cannot fail
+        # merely because the model copied a default field list.
+        legacy_fields = []
+        requests = []
+        aggregate = None
     result_scope = str(value.get("result_scope") or "all_matches")
     context_mode = str(value.get("context_mode") or "independent")
     if result_scope not in {"first", "all_matches"} or context_mode not in {
@@ -334,7 +385,7 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         "continuation",
     }:
         raise ValueError("产品任务查询范围不受支持")
-    return ProductQuery(
+    query = ProductQuery(
         operation=operation,  # type: ignore[arg-type]
         include_models=tuple(reference.value for reference in references),
         exclude_models=_deduplicated_strings(value.get("exclude_models", [])),
@@ -350,7 +401,25 @@ def _parse_product_query(value: object, *, intent: Intent) -> ProductQuery:
         page_size=max(1, min(10, int(value.get("page_size") or 5))),
         context_mode=context_mode,  # type: ignore[arg-type]
         ambiguities=tuple(ambiguities),
+        target=target,  # type: ignore[arg-type]
     )
+    issues = validate_capability(
+        operation=query.operation,
+        fields=tuple(request.field for request in query.requested_fields),
+        aggregate_kind=query.aggregate.kind if query.aggregate else None,
+        reference_count=len(query.effective_references()),
+        page_size=query.page_size,
+    )
+    # Page sizes are clamped by the execution validator because older planner
+    # payloads commonly omit the field (and therefore inherit the list default).
+    hard_issues = [
+        issue
+        for issue in issues
+        if issue.code not in {"permission_denied", "page_size_exceeded"}
+    ]
+    if hard_issues:
+        raise ValueError(hard_issues[0].message)
+    return query
 
 
 def _special_function_catalog_filter(
@@ -398,50 +467,88 @@ def _fallback_product_query(query: str, decision: IntentDecision) -> ProductQuer
     from app.business.intent import is_product_catalog_query
     from app.business.product_selection import product_identifier_tokens
 
+    preparsed = preparse_product_query(query)
     included = tuple(product_identifier_tokens(query))
     operation: ProductOperation
     if decision.intent == Intent.PRODUCT_MEDIA:
         operation = "media"
     else:
         explicit = detect_product_operation(query)
-        if explicit == "recommend" and not included:
+        if preparsed.aggregate is not None:
+            operation = "aggregate"
+        elif explicit == "recommend" and not included:
             # 没有型号的「推荐我一款」是面向整个产品库的浏览请求。规则路径无法构造
-            # 可信的排序查询，执行层会按不安全拒绝（on 模式）或索要型号（旧链路），
+            # 可信的排序查询，执行层会按不安全计划拒绝或要求补充型号，
             # 员工只能拿到死胡同。降级为清单浏览：结果差一些，但可执行、可继续。
             operation = "list"
         elif explicit is not None:
             operation = explicit
+        elif preparsed.required_operation == "list":
+            operation = "list"
         elif is_product_catalog_query(query):
             operation = "list"
         else:
             operation = "detail"
     requests = fallback_field_requests(query)
     fields = tuple(request.field for request in requests)
-    filters: tuple[ProductFilter, ...] = ()
+    filters: tuple[ProductFilter, ...] = tuple(preparsed.filters)
     if operation == "list":
-        special_fields, filters = _special_function_catalog_filter(query)
+        special_fields, special_filters = _special_function_catalog_filter(query)
         if special_fields:
+            combined = [*filters, *special_filters]
+            seen_filters: set[tuple[object, ...]] = set()
+            filters = tuple(
+                item
+                for item in combined
+                if not (
+                    (item.field, item.operator, item.value) in seen_filters
+                    or seen_filters.add((item.field, item.operator, item.value))
+                )
+            )
             fields = special_fields
             requests = tuple(
                 ProductFieldRequest(field, source="fallback") for field in special_fields
             )
+    if operation == "count":
+        fields = ()
+        requests = ()
     references = tuple(ProductReference(value, "fragment", value, "fallback") for value in included)
+    # Keep deterministic references/filters as executable constraints on the
+    # no-model path.  The same values are also retained as required provenance
+    # for the server-side completeness gate.
+    if not included:
+        references = tuple(preparsed.references)
+        included = tuple(item.value for item in references)
     return ProductQuery(
         operation=operation,
         include_models=included,
         fields=fields,
         filters=filters,
+        aggregate=preparsed.aggregate,
         references=references,
         requested_fields=requests,
         result_scope="all_matches",
-        page=1,
-        page_size=5,
+        sorts=preparsed.sorts,
+        page=preparsed.page,
+        page_size=preparsed.page_size,
         context_mode=(
             "continuation"
             if not included and any(word in query for word in ("它", "这个", "那个", "这款"))
             else "independent"
         ),
         ambiguities=detect_product_ambiguities(query),
+        # A direct "查一下某产品" request is an overview even when the
+        # identifier is a fragment that may turn out not to exist. That lets
+        # the V2 executor return a truthful no-result answer instead of asking
+        # for a field before it has checked the catalog.
+        allow_overview=bool(references and not requests and "产品" in query),
+        required_references=tuple(preparsed.required_references),
+        required_filters=tuple(preparsed.required_filters),
+        required_operation=(
+            operation
+            if preparsed.required_operation in {"count", "compare", "recommend", "aggregate"}
+            else None
+        ),
     )
 
 
@@ -506,6 +613,41 @@ def _ground_product_query(product_query: ProductQuery, query: str) -> ProductQue
         fields=fields,
         references=references,
         requested_fields=requests,
+    )
+
+
+def _is_entity_product_count_request(query: str) -> bool:
+    """Return whether a count-shaped request is about products themselves.
+
+    ``detect_product_operation`` intentionally recognizes both "多少产品" and
+    "多少种颜色" as count-shaped language.  The fallback field detector and
+    ontology then distinguish entity counts from distinct counts over a
+    dimension/measure.  Identifier fields such as ``model`` are not
+    aggregatable: counting them is the same as counting products.
+    """
+
+    if detect_product_operation(query) != "count":
+        return False
+    return not any(
+        PRODUCT_FIELD_CATALOG.get(request.field)
+        and PRODUCT_FIELD_CATALOG[request.field].aggregatable
+        for request in fallback_field_requests(query)
+    )
+
+
+def _normalize_product_count_query(product_query: ProductQuery, query: str) -> ProductQuery:
+    """Repair a model aggregate for an unqualified product-entity count."""
+
+    if product_query.operation != "aggregate" or not _is_entity_product_count_request(query):
+        return product_query
+    return replace(
+        product_query,
+        operation="count",
+        target="product",
+        aggregate=None,
+        fields=(),
+        requested_fields=(),
+        original_fields=(),
     )
 
 
@@ -594,6 +736,7 @@ def parse_task_plan(
 ) -> TaskPlan:
     """Validate model output and reduce it to executable domain decisions."""
     payload = _json_object(content)
+    reject_unsafe_model_payload(payload)
     raw_tasks = payload.get("tasks")
     if not isinstance(raw_tasks, list) or not raw_tasks:
         raise ValueError("任务规划中没有可执行任务")
@@ -623,9 +766,38 @@ def parse_task_plan(
         product_query = None
         if decision.intent in {Intent.PRODUCT, Intent.PRODUCT_MEDIA}:
             product_query = _parse_product_query(
-                raw_task.get("product_query"), intent=decision.intent
+                raw_task.get("product_query"), intent=decision.intent, query=query
             )
             product_query = _ground_product_query(product_query, query)
+            product_query = _normalize_product_count_query(product_query, query)
+            preparse = preparse_product_query(query)
+            preparse_sort_fields = {item.field for item in preparse.sorts}
+            product_query = replace(
+                product_query,
+                sorts=tuple(
+                    (
+                        *preparse.sorts,
+                        *(
+                            item
+                            for item in product_query.sorts
+                            if item.field not in preparse_sort_fields
+                        ),
+                    )
+                ),
+                page=(preparse.page if re.search(r"第\s*\d+\s*页", query) else product_query.page),
+                page_size=(
+                    preparse.page_size
+                    if re.search(r"每页\s*\d+", query)
+                    else product_query.page_size
+                ),
+                required_references=preparse.required_references,
+                required_filters=preparse.required_filters,
+                required_operation=(
+                    preparse.required_operation
+                    if preparse.required_operation in {"count", "compare", "recommend", "aggregate"}
+                    else None
+                ),
+            )
         tasks.append(PlannedTask(decision, product_query))
     if not tasks:
         raise ValueError("任务规划去重后没有可执行任务")
@@ -686,7 +858,13 @@ def plan_tasks(
                     {
                         "role": "user",
                         "content": json.dumps(
-                            {"recent_context": context, "current_message": query[:1000]},
+                            {
+                                "recent_context": context,
+                                "current_message": query[:1000],
+                                "deterministic_preparse": product_query_to_dict(
+                                    preparse_product_query(query)
+                                ),
+                            },
                             ensure_ascii=False,
                         ),
                     },
@@ -733,6 +911,9 @@ def plan_tasks(
                             "recent_context": context,
                             "current_message": query[:1000],
                             "classified_intent": str(decision.intent),
+                            "deterministic_preparse": product_query_to_dict(
+                                preparse_product_query(query)
+                            ),
                         },
                         ensure_ascii=False,
                     ),

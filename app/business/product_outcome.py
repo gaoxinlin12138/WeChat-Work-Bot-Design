@@ -1,4 +1,4 @@
-"""Permission-safe result summaries for comparing delivered and shadow answers."""
+"""Permission-safe summaries for product query outcomes and audit records."""
 
 import hashlib
 import re

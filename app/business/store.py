@@ -181,6 +181,7 @@ class BusinessStore(ProductStoreMixin):
                 query_plan_redacted jsonb NOT NULL DEFAULT '{}'::jsonb,
                 validation_result jsonb NOT NULL DEFAULT '{}'::jsonb,
                 execution_summary jsonb NOT NULL DEFAULT '{}'::jsonb,
+                -- Retained for historical audit rows; the V2-only runtime no longer writes diffs.
                 shadow_diff jsonb NOT NULL DEFAULT '{}'::jsonb,
                 corrected_intent varchar(100),
                 correction_reason varchar(500),
@@ -197,6 +198,7 @@ class BusinessStore(ProductStoreMixin):
             "validation_result jsonb NOT NULL DEFAULT '{}'::jsonb",
             "ALTER TABLE intent_audit_logs ADD COLUMN IF NOT EXISTS "
             "execution_summary jsonb NOT NULL DEFAULT '{}'::jsonb",
+            # Historical audit compatibility; no active product-query shadow producer remains.
             "ALTER TABLE intent_audit_logs ADD COLUMN IF NOT EXISTS "
             "shadow_diff jsonb NOT NULL DEFAULT '{}'::jsonb",
             """CREATE UNIQUE INDEX IF NOT EXISTS intent_audit_request_idx
@@ -968,7 +970,6 @@ class BusinessStore(ProductStoreMixin):
         query_plan_redacted: object | None = None,
         validation_result: object | None = None,
         execution_summary: object | None = None,
-        shadow_diff: object | None = None,
     ) -> str:
         audit_id = str(uuid4())
         request_fingerprint = text_fingerprint(request_id) if request_id else None
@@ -979,8 +980,8 @@ class BusinessStore(ProductStoreMixin):
                 intent,confidence,
                 intent_source,intent_reason,understood_query_redacted,data_source,
                 response_preview,source_count,response_ms,planner_version,
-                query_plan_redacted,validation_result,execution_summary,shadow_diff)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                query_plan_redacted,validation_result,execution_summary)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT (request_fingerprint) WHERE request_fingerprint IS NOT NULL
                 DO NOTHING RETURNING id""",
                 (
@@ -1002,7 +1003,6 @@ class BusinessStore(ProductStoreMixin):
                     Jsonb(query_plan_redacted or {}),
                     Jsonb(validation_result or {}),
                     Jsonb(execution_summary or {}),
-                    Jsonb(shadow_diff or {}),
                 ),
             ).fetchone()
             if row:

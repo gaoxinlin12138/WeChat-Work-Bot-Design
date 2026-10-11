@@ -45,6 +45,9 @@ class ProductFieldDefinition:
     role: FieldRole = "text"
     # 派生属性：库里没有这一列，由其它字段算出来（见 DERIVED_DIMENSIONS）
     derived: bool = False
+    # None means infer from the value type; explicit values document exceptions.
+    sortable: bool | None = None
+    permission_scope: str | None = None
 
     @property
     def aggregatable(self) -> bool:
@@ -55,6 +58,14 @@ class ProductFieldDefinition:
     def groupable(self) -> bool:
         """能不能作为分类维度分组（标识符不行，见 FieldRole 的注释）。"""
         return self.role == "dimension"
+
+    @property
+    def can_sort(self) -> bool:
+        return self.sortable if self.sortable is not None else self.value_type in {"text", "number"}
+
+    @property
+    def required_permission(self) -> str | None:
+        return self.permission_scope if self.sensitive else None
 
 
 PRODUCT_FIELD_CATALOG: dict[str, ProductFieldDefinition] = {
@@ -148,6 +159,7 @@ PRODUCT_FIELD_CATALOG: dict[str, ProductFieldDefinition] = {
         ("成本价", "成本", "进价", "采购价"),
         sensitive=True,
         role="measure",
+        permission_scope="product.cost.read",
     ),
     "piece_count": ProductFieldDefinition(
         "件数", "number", "当前登记件数", ("件数", "库存", "多少件", "几件"), role="measure"
@@ -164,6 +176,7 @@ PRODUCT_FIELD_CATALOG: dict[str, ProductFieldDefinition] = {
         # 但里面可能混着内部单价，所以同时是敏感字段（渲染时脱敏）。
         sensitive=True,
         role="dimension",
+        permission_scope="product.internal.read",
     ),
     "supplier": ProductFieldDefinition(
         "供应商",

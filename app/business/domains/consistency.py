@@ -150,8 +150,8 @@ ONTOLOGY_COVERAGE_CHECKS: tuple[CoverageCheck, ...] = (
         name="产品概览短语 → 概览判定",
         rationale=(
             "意图层用这些短语把提问判成「看整体」，概览判定（allow_overview）必须同样认识它们。"
-            "否则「LY0653GDT 的全部参数」会被当成「没说要哪些字段」：旧链路会列出全部字段，"
-            "V2 直接拒答。「参数」「规格」就这样漏过一次。"
+            "否则「LY0653GDT 的全部参数」会被当成「没说要哪些字段」，V2 就会直接拒答。"
+            "「参数」「规格」曾经因此漏过一次。"
         ),
         words=_PRODUCT_OVERVIEW_WORDS,
         classify=_overview_recognized,

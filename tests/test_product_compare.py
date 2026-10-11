@@ -27,11 +27,15 @@ def _product(model: str, set_price: str) -> BusinessResult:
     )
 
 
+def _v2_product(model: str, set_price: str) -> dict[str, object]:
+    return {"model": model, "set_price": set_price.removesuffix("元")}
+
+
 def test_comparison_verdict_names_the_more_expensive_model() -> None:
     agent = BusinessAgent(_Store())
-    products = [_product("LY0653GDT", "234.00元"), _product("LY0689GT", "258.00元")]
+    products = [_v2_product("LY0653GDT", "234.00元"), _v2_product("LY0689GT", "258.00元")]
 
-    verdict = agent._comparison_verdict(products)
+    verdict = agent._v2_comparison_verdict(products)
 
     assert verdict is not None
     assert "LY0689GT" in verdict
@@ -41,9 +45,9 @@ def test_comparison_verdict_names_the_more_expensive_model() -> None:
 
 def test_comparison_verdict_reports_equal_prices() -> None:
     agent = BusinessAgent(_Store())
-    products = [_product("A-1", "100.00元"), _product("B-1", "100.00元")]
+    products = [_v2_product("A-1", "100.00元"), _v2_product("B-1", "100.00元")]
 
-    verdict = agent._comparison_verdict(products)
+    verdict = agent._v2_comparison_verdict(products)
 
     assert verdict is not None
     assert "相同" in verdict
@@ -52,16 +56,16 @@ def test_comparison_verdict_reports_equal_prices() -> None:
 def test_comparison_verdict_refuses_when_a_price_is_missing() -> None:
     """缺一个价格就不下结论——猜出来的对比比没有对比更危险。"""
     agent = BusinessAgent(_Store())
-    products = [_product("A-1", "100.00元"), _product("B-1", "资料中未登记")]
+    products = [_v2_product("A-1", "100.00元"), _v2_product("B-1", "")]
 
-    assert agent._comparison_verdict(products) is None
+    assert agent._v2_comparison_verdict(products) is None
 
 
 def test_comparison_verdict_needs_at_least_two_priced_models() -> None:
     agent = BusinessAgent(_Store())
 
-    assert agent._comparison_verdict([]) is None
-    assert agent._comparison_verdict([_product("A-1", "100.00元")]) is None
+    assert agent._v2_comparison_verdict([]) is None
+    assert agent._v2_comparison_verdict([_v2_product("A-1", "100.00元")]) is None
 
 
 def test_full_model_number_wins_over_containing_variants() -> None:

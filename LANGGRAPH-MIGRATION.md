@@ -17,8 +17,9 @@
 - `BusinessAgent.answer()` 的公开契约保持不变。
 - 已加入 PostgreSQL Checkpointer 资源池和独立开关，默认关闭；开启时 LangGraph 自动初始化
   checkpoint 表。现有 Redis 仍是跨消息业务会话的唯一状态来源。
-- 旧 `_answer_legacy()`、`_answer_decision()`、`route_intent -> apply_business_guards` 和固定领域
-  节点主链均已删除；LangGraph 任务规划链是唯一业务编排器。
+- 旧 `_answer_legacy()`、`_answer_decision()`、`route_intent -> apply_business_guards`、
+  产品查询 legacy/shadow/off 分支和固定领域节点主链均已删除；LangGraph 任务规划链与
+  产品 V2 结构化查询链是当前唯一业务路径。
 - 多轮客户话术已经拆为 `load_session -> collect_fields -> generate_reply` 子图；缺失字段时
   子图在 `collect_fields` 后结束并等待员工下一条消息，当前由 Redis 恢复会话。
 - 企业微信 `msgid` 会先经过现有数据库领取去重，再以哈希形式进入图状态和意图审计；审计表

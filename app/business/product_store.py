@@ -36,6 +36,12 @@ class ProductQueryResult:
     total: int
     page: int
     page_size: int
+    # Unified response metadata. Defaults keep compatibility with existing in-memory stores.
+    has_more: bool = False
+    cursor: str | None = None
+    truncated: bool = False
+    truncation_reason: str | None = None
+    requested_fields: tuple[str, ...] = ()
 
 
 # 统计类查询一次最多取回多少行。统计要把匹配项全部取回来算，所以不按展示分页来限；
@@ -854,6 +860,13 @@ class ProductStoreMixin:
         """Compile a validated plan into parameterized SQL over published snapshots."""
         clauses: list[str] = []
         params: list[object] = []
+        if product_query.resolved_product_ids:
+            # Resolved conversation references are server-side IDs.  They are
+            # stricter than a model string and prevent an ordinal follow-up
+            # from expanding to a same-family variant.
+            placeholders = ",".join("%s" for _ in product_query.resolved_product_ids)
+            clauses.append(f"id::text IN ({placeholders})")
+            params.extend(product_query.resolved_product_ids)
         references = product_query.effective_references()
         if references:
             reference_clauses: list[str] = []
@@ -897,7 +910,7 @@ class ProductStoreMixin:
         # 它需要把匹配项全部取回来才能算对（多少种颜色、平均价、最值），
         # 所以这里对它单独放开。此前没放开的结果是：统计只覆盖了前 5 款，
         # 「一共有多少种颜色」答成 2 种（实际 12 种）——错的比不答更糟。
-        if product_query.operation == "aggregate":
+        if product_query.operation in {"aggregate", "count"}:
             page_cap = AGGREGATE_MAX_ROWS
         elif product_query.operation == "recommend":
             page_cap = 10
@@ -915,6 +928,9 @@ class ProductStoreMixin:
         set_price,{cost_projection},body_price,piece_count,supplier,body_supplier,
         components,notes,source_row,created_at,updated_at"""
         with self._connect() as connection:
+            # The database enforces the same read-only boundary as the
+            # fixed-column, parameterized query compiler above.
+            connection.execute("SET TRANSACTION READ ONLY")
             total_row = connection.execute(
                 f"SELECT count(*) AS total FROM active_product_catalog WHERE {where_sql}",
                 params,
@@ -929,6 +945,7 @@ class ProductStoreMixin:
             total=int(total_row["total"] if total_row else 0),
             page=page,
             page_size=page_size,
+            has_more=page * page_size < int(total_row["total"] if total_row else 0),
         )
 
     def product_text_field_values(self) -> dict[str, tuple[str, ...]]:

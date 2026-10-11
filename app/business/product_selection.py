@@ -52,10 +52,14 @@ def product_identifier_tokens(query: str) -> list[str]:
         if token.isdigit() and (
             re.search(
                 r"(?:价格|售价|报价|单价|成本|预算|费用|约|大概|上下|￥|¥)"
-                r"\s*(?:在|是|为|到|不超过|低于|高于)?\s*$",
+                r"\s*(?:在|是|为|从|到|不超过|低于|高于|不少于|不低于|以上|以下)?\s*$",
                 normalized[: match.start()],
             )
-            or re.match(r"\s*(?:左右|上下|以内|以外|以上|以下|多点|来块|多)", tail)
+            or re.search(
+                r"(?:价格|售价|报价|单价|成本|预算|费用)\s*(?:在|从|是|为)?\s*\d+\s*(?:到|至|~|～|-)$",
+                normalized[max(0, match.start() - 24) : match.start()],
+            )
+            or re.match(r"\s*(?:左右|上下|以内|以外|以上|以下|多点|来块|多|到|至)", tail)
         ):
             continue
         tokens.append(token)

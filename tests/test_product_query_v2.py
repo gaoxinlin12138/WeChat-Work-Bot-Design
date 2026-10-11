@@ -1,8 +1,5 @@
 """Product-query V2 contract and isolated PostgreSQL execution tests."""
 
-from types import SimpleNamespace
-
-from app.business.intent import Intent, IntentDecision
 from app.business.product_query import (
     ProductFieldRequest,
     ProductFilter,
@@ -12,11 +9,6 @@ from app.business.product_query import (
 )
 from app.business.service import BusinessAgent
 from app.business.store import BusinessStore
-from app.business.tools.common import RoutedReply
-
-
-def _decision(query: str) -> IntentDecision:
-    return IntentDecision(Intent.PRODUCT, 0.99, "V2产品查询", query)
 
 
 def test_validation_rejects_ungrounded_fields_and_detects_real_ambiguity() -> None:
@@ -220,90 +212,3 @@ def test_v2_ambiguity_follow_up_uses_structured_context_only(
     assert "主体的材质，还是套装包含的配件" in ambiguity.content
     assert "顶喷" in components.content
     assert "材质：全铜" not in components.content
-
-
-def test_off_shadow_and_on_modes_keep_the_legacy_rollback_boundary(monkeypatch) -> None:
-    agent = BusinessAgent(object())
-    legacy = RoutedReply(Intent.PRODUCT, "legacy", [])
-    v2 = RoutedReply(
-        Intent.PRODUCT,
-        "v2",
-        [],
-        execution_trace={"planner_version": "product-query-v2"},
-    )
-    monkeypatch.setattr(agent, "_answer_product_legacy", lambda *_args, **_kwargs: legacy)
-    monkeypatch.setattr(agent, "_answer_product_v2", lambda *_args, **_kwargs: v2)
-    query = ProductQuery()
-
-    monkeypatch.setattr(
-        agent,
-        "_business_settings",
-        lambda: SimpleNamespace(product_query_v2_mode="off"),
-    )
-    assert agent._answer_product("u", "Q", "Q", _decision("Q"), query).content == "legacy"
-
-    monkeypatch.setattr(
-        agent,
-        "_business_settings",
-        lambda: SimpleNamespace(product_query_v2_mode="shadow"),
-    )
-    shadow = agent._answer_product("u", "Q", "Q", _decision("Q"), query)
-    assert shadow.content == "legacy"
-    assert "shadow_diff" in shadow.execution_trace
-
-    monkeypatch.setattr(
-        agent,
-        "_business_settings",
-        lambda: SimpleNamespace(product_query_v2_mode="on"),
-    )
-    assert agent._answer_product("u", "Q", "Q", _decision("Q"), query).content == "v2"
-
-
-def test_shadow_failure_never_changes_the_legacy_answer(monkeypatch) -> None:
-    # 生产环境的 store 具备 V2 编译能力；桩必须同样声明该能力，否则会走
-    # 「显式跳过」分支，验证不到失败回退这条路径。
-    agent = BusinessAgent(SimpleNamespace(query_products_v2=lambda *_a, **_k: None))
-    monkeypatch.setattr(
-        agent,
-        "_business_settings",
-        lambda: SimpleNamespace(product_query_v2_mode="shadow"),
-    )
-    monkeypatch.setattr(
-        agent,
-        "_answer_product_legacy",
-        lambda *_args, **_kwargs: RoutedReply(Intent.PRODUCT, "legacy", []),
-    )
-
-    def fail(*_args, **_kwargs):
-        raise RuntimeError("shadow failed")
-
-    monkeypatch.setattr(agent, "_answer_product_v2", fail)
-    reply = agent._answer_product("u", "Q", "Q", _decision("Q"), ProductQuery())
-
-    assert reply.content == "legacy"
-    assert reply.execution_trace["shadow_diff"] == {"error_type": "RuntimeError"}
-
-
-def test_shadow_is_skipped_explicitly_when_store_cannot_compile_v2(monkeypatch) -> None:
-    agent = BusinessAgent(object())
-    monkeypatch.setattr(
-        agent,
-        "_business_settings",
-        lambda: SimpleNamespace(product_query_v2_mode="shadow"),
-    )
-    monkeypatch.setattr(
-        agent,
-        "_answer_product_legacy",
-        lambda *_args, **_kwargs: RoutedReply(Intent.PRODUCT, "legacy", []),
-    )
-
-    def unexpected(*_args, **_kwargs):
-        raise AssertionError("store 不支持 V2 时不应尝试 shadow 对比")
-
-    monkeypatch.setattr(agent, "_answer_product_v2", unexpected)
-    reply = agent._answer_product("u", "Q", "Q", _decision("Q"), ProductQuery())
-
-    assert reply.content == "legacy"
-    assert reply.execution_trace["shadow_diff"] == {
-        "skipped": "store_without_query_products_v2"
-    }
