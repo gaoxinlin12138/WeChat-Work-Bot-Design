@@ -59,8 +59,11 @@ class BusinessAgent(KnowledgeToolMixin, ProductToolMixin, MediaToolMixin, ReplyS
         self._product_query_context = SharedState(
             getattr(get_settings(), "redis_url", None), "wecom:product-query-v2-validated"
         )
-        self._product_shadow_query_context = SharedState(
-            getattr(get_settings(), "redis_url", None), "wecom:product-query-v2-shadow"
+        # Single source of truth for product continuation, ordinal selection,
+        # pagination and result ordering.  The older maps remain readable for
+        # one-time migration and compatibility with in-flight workers.
+        self._product_focus = SharedState(
+            getattr(get_settings(), "redis_url", None), "wecom:product-focus"
         )
         self._knowledge_choices = SharedState(
             getattr(get_settings(), "redis_url", None), "wecom:knowledge-choices"
@@ -184,7 +187,6 @@ class BusinessAgent(KnowledgeToolMixin, ProductToolMixin, MediaToolMixin, ReplyS
             query_plan_redacted=reply.execution_trace.get("query_plan", {}),
             validation_result=reply.execution_trace.get("validation", {}),
             execution_summary=reply.execution_trace.get("execution", {}),
-            shadow_diff=reply.execution_trace.get("shadow_diff", {}),
         )
 
     def _get_business_graph(self):

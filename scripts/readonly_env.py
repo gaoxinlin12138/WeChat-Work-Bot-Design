@@ -55,7 +55,6 @@ class ReadOnlyBusiness(GraphSession):
 
     def __init__(
         self,
-        v2_mode: str = "shadow",
         *,
         with_embeddings: bool = False,
         with_planner: bool = False,
@@ -77,7 +76,6 @@ class ReadOnlyBusiness(GraphSession):
                 # 复现行为不需要 checkpoint，这里关掉。
                 langgraph_checkpoint_enabled=False,
                 task_planner_enabled=with_planner,
-                product_query_v2_mode=v2_mode,
             )
         else:
             settings = Settings(
@@ -89,7 +87,6 @@ class ReadOnlyBusiness(GraphSession):
                 redis_url=None,
                 database_url=read_only_url(),
                 task_planner_enabled=False,
-                product_query_v2_mode=v2_mode,
             )
         with patch.object(service_module, "get_settings", lambda: settings):
             knowledge = RagAgent(

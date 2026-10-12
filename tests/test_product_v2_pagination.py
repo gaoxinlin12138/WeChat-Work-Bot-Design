@@ -1,8 +1,6 @@
 """V2 目录翻页的回归测试。
 
-翻页此前只在旧链路可用：翻页判定读的 `_product_catalog_context` 只由旧链路写入，
-真正翻页的 `_catalog_page_reply` 也只在旧链路被调用。于是 `on` 模式下「下一页」
-不翻页，直接掉进通用问答。
+V2 是唯一产品查询链路，翻页上下文由结构化查询条件和页码维护。
 """
 
 from app.business.product_query import ProductFieldRequest, ProductQuery, ProductReference
@@ -58,12 +56,8 @@ def _reference(model: str) -> ProductReference:
 MODELS = [f"LY{i:04d}GT" for i in range(1, 13)]
 
 
-def test_v2_list_records_catalog_context_only_when_delivering() -> None:
-    """shadow 运行是观测，绝不能写正式目录上下文。
-
-    影子比较与旧链路在同一次请求里先后跑，影子写下的 "v2" 形态上下文会覆盖旧链路
-    写的那份（那份带 ids），结果 shadow 下紧接着的「下一页」反而翻不动。
-    """
+def test_v2_list_records_catalog_context() -> None:
+    """正式 V2 查询会写入可复用的目录上下文。"""
     agent = BusinessAgent(_CatalogStore(MODELS))
 
     agent._answer_product_v2(
@@ -72,17 +66,6 @@ def test_v2_list_records_catalog_context_only_when_delivering() -> None:
         _list_query(),
         can_view_cost=False,
         cost_access_message="无权限",
-        shadow=True,
-    )
-    assert agent._state_get(agent._product_catalog_context, "u1") is None
-
-    agent._answer_product_v2(
-        "u1",
-        "你们有哪些产品",
-        _list_query(),
-        can_view_cost=False,
-        cost_access_message="无权限",
-        shadow=False,
     )
     context = agent._state_get(agent._product_catalog_context, "u1")
     assert isinstance(context, dict)
@@ -142,7 +125,7 @@ def test_v2_catalog_page_reply_ignores_non_page_turns() -> None:
 
 
 def test_v2_catalog_page_reply_needs_a_v2_context() -> None:
-    """旧链路写的上下文带 ids、没有 mode，不能被 V2 翻页误用。"""
+    """不符合 V2 结构的历史上下文不会被翻页逻辑误用。"""
     agent = BusinessAgent(_CatalogStore(MODELS))
     agent._product_catalog_context["u1"] = {"ids": ["a", "b"], "page": 1}
 

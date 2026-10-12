@@ -99,21 +99,7 @@ try {
 
 # ---------- 配置 ----------
 Write-Title '配置'
-$envFile = Join-Path $projectRoot '.env'
-$v2Mode = '<未设置（默认 shadow）>'
-if (Test-Path -LiteralPath $envFile) {
-    $line = Get-Content -LiteralPath $envFile -Encoding UTF8 |
-        Where-Object { $_ -match '^\s*PRODUCT_QUERY_V2_MODE\s*=' } |
-        Select-Object -Last 1
-    if ($line) { $v2Mode = ($line -split '=', 2)[1].Trim() }
-}
-$v2Note = switch ($v2Mode) {
-    'on' { 'V2 交付（回答里会写「找到 N 款符合条件的产品」）' }
-    'shadow' { '旧链路交付，V2 只观测对比' }
-    'off' { 'V2 完全不跑' }
-    default { '未设置 → 代码默认 shadow（旧链路交付）' }
-}
-Write-Item 'PRODUCT_QUERY_V2_MODE' ("{0}   {1}" -f $v2Mode, $v2Note)
+Write-Item '产品查询链路' 'QueryPlan 审查 + V2 结构化执行（唯一交付链路）' 'Green'
 
 # ---------- 最近日志 ----------
 Write-Title '最近的运行日志（文件名带启动时刻）'

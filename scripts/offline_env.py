@@ -28,7 +28,7 @@ from scripts.evaluate_chain import SnapshotBusinessStore, SnapshotKnowledgeStore
 from scripts.graph_session import GraphSession
 
 
-def offline_settings(v2_mode: str = "shadow") -> Settings:
+def offline_settings() -> Settings:
     """构造与本机 .env 完全隔离的配置。"""
     return Settings(
         _env_file=None,
@@ -39,15 +39,14 @@ def offline_settings(v2_mode: str = "shadow") -> Settings:
         redis_url=None,
         database_url=None,
         task_planner_enabled=False,
-        product_query_v2_mode=v2_mode,
     )
 
 
 class OfflineBusiness(GraphSession):
     """在隔离环境里执行请求，同时暴露计划与回复。"""
 
-    def __init__(self, v2_mode: str = "shadow") -> None:
-        settings = offline_settings(v2_mode)
+    def __init__(self) -> None:
+        settings = offline_settings()
         knowledge = RagAgent(settings, SnapshotKnowledgeStore())
         with patch.object(service_module, "get_settings", lambda: settings):
             agent = BusinessAgent(SnapshotBusinessStore())

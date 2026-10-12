@@ -24,7 +24,7 @@ def test_overview_vocabulary_covers_every_declared_overview_phrase() -> None:
     """意图层认定的概览说法，概览判定必须同样认识。
 
     「参数」「规格」曾只在意图路由词表里，于是这类提问在 V2 下被判成「没说要哪些字段」
-    并直接拒答，而旧链路会列出全部字段。
+    并直接拒答。
     """
     unrecognized = [
         phrase
@@ -94,8 +94,7 @@ def test_v2_note_hides_internal_pricing_without_cost_permission() -> None:
     """备注里混着供应商和单价，没有成本权限时不能跟着显示出来。
 
     5 款产品的备注形如「10只装；止水阀*2：供应商圣冠，单价0.27元」。
-    旧链路按「；」切分渲染后的文本、恰好只显示了第一段，属于侥幸；
-    V2 直接读库里的整列，会把内部单价原样给出。
+    V2 直接读取整列，因此必须在输出前过滤内部供应商和单价信息。
     """
     agent = BusinessAgent(_Store())
     private_note = "10只装；止水阀*2：供应商圣冠，单价0.27元"

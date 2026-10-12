@@ -9,7 +9,13 @@
 所以这里同时盯住"分页上限必须为统计打开"——否则只统计前 5 款，答出来的数字是错的。
 """
 
-from app.business.product_query import ProductAggregate, ProductQuery
+from app.business.product_query import (
+    ProductAggregate,
+    ProductFieldRequest,
+    ProductQuery,
+    preparse_product_query,
+    validate_product_query,
+)
 from app.business.product_store import AGGREGATE_MAX_ROWS, ProductQueryResult
 from app.business.service import BusinessAgent
 
@@ -44,6 +50,30 @@ def _query(kind: str, field: str, **kwargs: object) -> ProductQuery:
 
 
 COLORS = ["灰玻璃·枪灰", "灰玻璃·枪灰", "奶白", "电镀", None]
+
+
+def test_cheapest_product_price_is_preparsed_as_minimum_price() -> None:
+    query = preparse_product_query("最便宜的产品的价格是多少")
+
+    assert query.operation == "aggregate"
+    assert query.aggregate is not None
+    assert query.aggregate.kind == "min"
+    assert query.aggregate.field == "set_price"
+
+
+def test_cheapest_query_cannot_be_downgraded_to_detail_by_model() -> None:
+    parsed = preparse_product_query("最便宜的产品的价格是多少")
+    model_query = ProductQuery(
+        operation="detail",
+        requested_fields=(ProductFieldRequest("set_price", "价格", "current"),),
+    )
+
+    result = validate_product_query(
+        model_query, "最便宜的产品的价格是多少", can_view_cost=False
+    )
+
+    assert parsed.required_operation == "aggregate"
+    assert any("原话要求 aggregate" in error for error in result.errors)
 
 
 def _color_items() -> list[dict[str, object]]:

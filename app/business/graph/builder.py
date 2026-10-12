@@ -28,7 +28,25 @@ from app.business.intent import (
     is_product_catalog_query,
 )
 from app.business.planner import PlannedTask, TaskPlan, plan_from_decision, plan_tasks
+from app.business.product_focus import (
+    ProductFocus,
+    focus_from_dict,
+    focus_from_legacy,
+    ordinal_index,
+)
+from app.business.product_query import (
+    ProductFieldRequest,
+    ProductReference,
+    product_query_from_dict,
+)
 from app.business.product_selection import has_product_identifier
+from app.business.query_governance import OutputPolicy, enforce_output_budget
+from app.business.query_plan import (
+    PermissionContext,
+    product_query_from_plan,
+    query_plan_from_product_query,
+    review_query_plan,
+)
 from app.business.response_style import normalize_wecom_answer
 from app.business.tools.common import ReplySession, RoutedReply
 from app.business.tools.reply_script import _NEW_TASK_MARKERS, extract_reply_fields
@@ -36,6 +54,166 @@ from app.messages import WELCOME_MESSAGE
 
 PlanRoute = Literal["clarification", "execute"]
 ExecutionRoute = Literal["execute", "verify"]
+
+
+_COUNT_LISTING_FOLLOW_UP_MARKERS = (
+    "分别是",
+    "分别哪",
+    "具体是",
+    "具体哪",
+    "哪几个",
+    "哪几种",
+    "哪几款",
+    "哪两个",
+    "哪两种",
+    "哪两款",
+    "把它们列出来",
+    "把这些列出来",
+    "列出来看看",
+)
+
+_FOLLOW_UP_FIELDS = (
+    (("价格", "多少钱", "售价", "套装价"), "set_price", "价格"),
+    (("主体价", "主体价格"), "body_price", "主体价格"),
+    (("成本价", "采购价", "进价"), "cost_price", "成本价"),
+    (("材质", "材料"), "material", "材质"),
+    (("颜色",), "color", "颜色"),
+    (("配件", "组成"), "components", "配件"),
+)
+
+
+def _ordinal_detail_follow_up_plan(query: str, product_context: object) -> TaskPlan | None:
+    if isinstance(product_context, ProductFocus):
+        focus = product_context
+    else:
+        focus = focus_from_dict(product_context)
+        if focus is None or (
+            not focus.result_ids and not focus.result_models and focus.query_plan is None
+        ):
+            focus = focus_from_legacy(product_context)
+    if focus is None or not focus.is_valid():
+        return None
+    parsed = ordinal_index(query)
+    if parsed is None:
+        return None
+    index, marker = parsed
+    if marker == "后者" and len(focus.result_ids or focus.result_models) != 2:
+        return None
+    selected = focus.item_at(index)
+    if selected is None:
+        return None
+    model_id, model = selected
+    if not model_id:
+        return None
+    field = next(
+        iter(
+            sorted(
+                (
+                    (name, marker)
+                    for markers, name, _evidence in _FOLLOW_UP_FIELDS
+                    for marker in markers
+                    if marker in query
+                ),
+                key=lambda item: len(item[1]),
+                reverse=True,
+            )
+        ),
+        None,
+    )
+    if field is None:
+        return None
+    reference_value = model or f"id:{model_id}"
+    reference = ProductReference(
+        reference_value,
+        "exact" if model else "context",
+        reference_value,
+        "context",
+    )
+    # The product comes from the previous displayed result; the field is a
+    # fresh request in the current message and must be grounded there.
+    request = ProductFieldRequest(field[0], field[1], "current")
+    from app.business.product_query import ProductQuery
+
+    plan = ProductQuery(
+        operation="detail",
+        references=(reference,),
+        include_models=(model,) if model else (),
+        requested_fields=(request,),
+        fields=(field[0],),
+        context_mode="continuation",
+        allow_overview=False,
+        resolved_product_ids=(model_id,) if focus.result_ids else (),
+    )
+    decision = IntentDecision(
+        intent=Intent.PRODUCT,
+        confidence=0.99,
+        reason="承接上一轮产品列表，查询指定序号产品信息",
+        query_for_search=query,
+        source="product_query_context",
+    )
+    return TaskPlan(
+        goal=query,
+        tasks=(PlannedTask(decision, plan),),
+        confidence=decision.confidence,
+        reason=decision.reason,
+        source=decision.source,
+    )
+
+
+def _count_listing_follow_up_plan(query: str, product_context: object) -> TaskPlan | None:
+    """Turn an ellipsis after a product count into the matching product list."""
+    if isinstance(product_context, ProductFocus):
+        focus = product_context
+    else:
+        focus = focus_from_dict(product_context)
+        if focus is None or (
+            not focus.result_ids and not focus.result_models and focus.query_plan is None
+        ):
+            focus = focus_from_legacy(product_context)
+    if (
+        focus is None
+        or not focus.is_valid()
+        or not any(marker in query for marker in _COUNT_LISTING_FOLLOW_UP_MARKERS)
+    ):
+        return None
+    saved_query = product_query_from_dict(focus.query_plan)
+    # Count replies now include the first product page immediately. Keep this
+    # continuation path for users who still ask to see the list again, whether
+    # the saved query came from the old count-only behavior or the new list-aware
+    # count response.
+    if saved_query is None or saved_query.operation not in {"count", "list"}:
+        return None
+    continued_query = replace(
+        saved_query,
+        operation="list",
+        references=tuple(
+            replace(item, source="context") for item in saved_query.effective_references()
+        ),
+        requested_fields=(),
+        fields=(),
+        original_fields=(),
+        filters=tuple(replace(item, source="context") for item in saved_query.filters),
+        aggregate=None,
+        page=1,
+        page_size=5,
+        context_mode="continuation",
+        allow_overview=True,
+        required_operation=None,
+    )
+    decision = IntentDecision(
+        intent=Intent.PRODUCT,
+        confidence=0.99,
+        reason="承接上一轮产品数量查询，列出对应产品",
+        query_for_search=query,
+        source="product_query_context",
+    )
+    return TaskPlan(
+        goal=query,
+        tasks=(PlannedTask(decision, continued_query),),
+        confidence=decision.confidence,
+        reason=decision.reason,
+        source=decision.source,
+    )
 
 
 def normalize_input(state: BusinessGraphState) -> dict[str, object]:
@@ -249,10 +427,10 @@ def _apply_media_context(
 def _prefetch_embedding(plan: TaskPlan, query: str, runtime: Runtime[BusinessGraphContext]) -> None:
     from app.business import service
 
+    settings = service.get_settings()
     if len(plan.tasks) != 1:
         return
     decision = plan.tasks[0].decision
-    settings = service.get_settings()
     has_contextual_reference = any(
         marker in query for marker in ("这个", "那个", "它", "上面", "刚才", "还有呢", "那就")
     )
@@ -266,6 +444,61 @@ def _prefetch_embedding(plan: TaskPlan, query: str, runtime: Runtime[BusinessGra
         runtime.context.embedding_future = service._ROUTING_EXECUTOR.submit(
             service.get_rag_agent().embed, [query]
         )
+
+
+def _apply_unified_query_plan(
+    plan: TaskPlan,
+    *,
+    message: str,
+    user_id: str,
+    can_view_sensitive: bool,
+    enabled: bool,
+) -> TaskPlan:
+    """Validate product tasks through QueryPlan before the V2 executor.
+
+    ProductQuery remains the sole executor. The adapter only makes the
+    reviewed unified contract authoritative and preserves trusted graph-only
+    metadata when it bridges back to ProductQuery. A failed review leaves the
+    original V2 task untouched as a safe rollback path.
+    """
+    if not enabled:
+        return plan
+    permission = PermissionContext(
+        user_id,
+        frozenset({"product.cost.read"}) if can_view_sensitive else frozenset(),
+    )
+    tasks: list[PlannedTask] = []
+    changed = False
+    for task in plan.tasks:
+        if task.product_query is None or task.decision.intent not in {
+            Intent.PRODUCT,
+            Intent.PRODUCT_MEDIA,
+        }:
+            tasks.append(task)
+            continue
+        structured = query_plan_from_product_query(
+            task.product_query,
+            domain="media" if task.decision.intent == Intent.PRODUCT_MEDIA else "product",
+        )
+        review = review_query_plan(structured, message, permission=permission)
+        if not review.passed:
+            tasks.append(task)
+            continue
+        reviewed = review.corrected_plan or structured
+        bridged, validation = product_query_from_plan(
+            reviewed,
+            message,
+            can_view_sensitive=can_view_sensitive,
+            base_query=task.product_query,
+        )
+        if bridged is None or not validation.passed:
+            tasks.append(task)
+            continue
+        tasks.append(replace(task, product_query=bridged))
+        changed = changed or bridged != task.product_query
+    if not changed:
+        return plan
+    return replace(plan, tasks=tuple(tasks))
 
 
 def create_plan(
@@ -305,17 +538,21 @@ def create_plan(
             )
         )
     )
-    product_context = (
-        agent._state_get(agent._product_query_context, user_id)
-        if getattr(settings, "product_query_v2_mode", "shadow") == "on"
-        else None
-    )
-    if continuation and isinstance(product_context, dict):
+    product_context = agent._get_product_focus(user_id)
+    ordinal_follow_up = _ordinal_detail_follow_up_plan(query, product_context)
+    if ordinal_follow_up is not None:
+        return {"plan": plan_to_payload(ordinal_follow_up)}
+    count_follow_up = _count_listing_follow_up_plan(query, product_context)
+    if count_follow_up is not None:
+        return {"plan": plan_to_payload(count_follow_up)}
+    if continuation and product_context is not None:
         planner_context = [
             {
                 "role": "system",
                 "content": "上一轮已验证的产品查询上下文："
-                + str(product_context.get("plan") or {})[:1500],
+                + str(
+                    product_context.query_plan if isinstance(product_context, ProductFocus) else {}
+                )[:1500],
                 "intent": str(Intent.PRODUCT),
             }
         ]
@@ -361,6 +598,13 @@ def create_plan(
         active_session=active_session,
     )
     plan = _apply_media_context(plan, agent=agent, user_id=user_id, query=query)
+    plan = _apply_unified_query_plan(
+        plan,
+        message=query,
+        user_id=user_id,
+        can_view_sensitive=runtime.context.can_view_cost,
+        enabled=getattr(settings, "unified_query_plan_enabled", True),
+    )
 
     intents = {task.decision.intent for task in plan.tasks}
     if not intents.intersection({Intent.PRODUCT, Intent.PRODUCT_MEDIA}) and intents.intersection(
@@ -428,6 +672,10 @@ def _domain_kwargs(
         "search_query": decision.query_for_search,
         "decision": decision,
         "product_query": task.product_query,
+        # Structured product contract: downstream tools receive the validated
+        # operation and filters explicitly, alongside the versioned query.
+        "operation": (task.product_query.operation if task.product_query is not None else None),
+        "filters": (task.product_query.filters if task.product_query is not None else ()),
         "prefetched_embedding": _prefetched_embedding(task, state, runtime),
         "stream_callback": context.stream_callback,
         "can_view_cost": context.can_view_cost,
@@ -608,13 +856,45 @@ def finalize_reply(
     agent = runtime.context.agent
     plan = plan_from_payload(state["plan"])
     base_reply = reply_from_payload(state["reply"])
+    bounded_content, truncated, truncation_reason = enforce_output_budget(
+        normalize_wecom_answer(base_reply.content), policy=OutputPolicy()
+    )
+    execution_trace = dict(base_reply.execution_trace or {})
+    execution_trace["output"] = {
+        "character_limit": OutputPolicy().max_chars,
+        "truncated": truncated,
+        "truncation_reason": truncation_reason,
+    }
+    # Keep the canonical contract and review in the trace. The established
+    # ProductQuery executor remains the source of truth; no model output is sent
+    # directly to a tool.
+    unified_plans = []
+    unified_reviews = []
+    for task in plan.tasks:
+        if task.product_query is None:
+            continue
+        structured = query_plan_from_product_query(task.product_query)
+        review = review_query_plan(
+            structured,
+            state["normalized_query"],
+            permission=PermissionContext(
+                runtime.context.user_id,
+                frozenset({"product.cost.read"}) if runtime.context.can_view_cost else frozenset(),
+            ),
+        )
+        unified_plans.append(structured.to_dict())
+        unified_reviews.append(review.to_dict())
+    if unified_plans:
+        execution_trace["unified_query_plans"] = unified_plans
+        execution_trace["query_plan_reviews"] = unified_reviews
     reply = replace(
         base_reply,
-        content=normalize_wecom_answer(base_reply.content),
+        content=bounded_content,
         intent_confidence=plan.confidence,
         intent_reason=plan.reason,
         understood_query=plan.goal,
         intent_source=plan.source,
+        execution_trace=execution_trace,
     )
     agent._record_intent_turn(
         runtime.context.user_id,

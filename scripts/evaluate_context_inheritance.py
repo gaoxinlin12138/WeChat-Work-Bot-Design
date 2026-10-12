@@ -29,7 +29,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="只读真实库上的多轮上下文继承评测")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--v2-mode", choices=("shadow", "on"), default="shadow")
     args = parser.parse_args()
 
     cases = [
@@ -42,7 +41,7 @@ def main() -> int:
     if not cases:
         raise SystemExit(f"没有找到标记 {REAL_DATA_TAG} 的用例")
 
-    business = ReadOnlyBusiness(v2_mode=args.v2_mode)
+    business = ReadOnlyBusiness()
     results: list[dict[str, object]] = []
     for index, case in enumerate(cases, 1):
         turns = list(case.get("turns") or [case["query"]])
@@ -71,7 +70,7 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "mode": f"rules-only-read-only-database-{args.v2_mode}",
+        "mode": "rules-only-read-only-database-v2",
         "limitations": [
             "离线规则路径：只代表模型不可用时的表现。",
             "只读会话执行：DSN 带 default_transaction_read_only=on。",
@@ -86,7 +85,7 @@ def main() -> int:
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    print(f"多轮上下文继承评测：{summary['cases']} 条（只读真实库，{args.v2_mode} 模式）")
+    print(f"多轮上下文继承评测：{summary['cases']} 条（只读真实库，V2 模式）")
     print()
     print(
         f"  上下文越界率  {summary['over_inherit_rate']:6.1%}"

@@ -1,7 +1,6 @@
-"""Conversation, evidence and shadow safety regressions; no live model required."""
+"""Conversation, evidence and V2 safety regressions; no live model required."""
 
 from dataclasses import replace
-from types import SimpleNamespace
 
 import pytest
 
@@ -331,118 +330,14 @@ def test_current_field_does_not_inherit_old_material_request():
     assert "材质：" not in reply.content
 
 
-@pytest.mark.parametrize(
-    "left,right",
-    [
-        ("材质：ABS", "配件：顶喷"),
-        ("材质：ABS", "材质：ABS\n颜色：白色"),
-        ("材质：ABS", "材质：全铜"),
-    ],
-)
-def test_same_product_different_answer_is_visible(left, right):
-    sources = [{"source_type": "product", "source_id": "same"}]
-    diff = BusinessAgent._shadow_diff(
-        RoutedReply(Intent.PRODUCT, left, sources),
-        RoutedReply(Intent.PRODUCT, right, sources),
-    )
-    assert diff["same_product_ids"]
-    assert not diff["same_content"]
-    assert not diff["same_semantics"]
-
-
-@pytest.mark.parametrize(
-    "left,right",
-    [
-        ("请确认主体材质还是配件", "无权限"),
-        ("无权限", "当前没有符合条件的已发布产品。"),
-        ("请提供型号", "产品资料查询暂时不可用，请稍后重试。"),
-    ],
-)
-def test_empty_source_lists_do_not_hide_result_type_differences(left, right):
-    diff = BusinessAgent._shadow_diff(
-        RoutedReply(Intent.PRODUCT, left, []),
-        RoutedReply(Intent.PRODUCT, right, []),
-    )
-    assert diff["same_product_ids"]
-    assert not diff["same_result_type"]
-
-
-def test_diff_compares_requested_fields_even_when_answer_is_identical():
-    reply = RoutedReply(Intent.PRODUCT, "材质：ABS", [])
-    left = replace(
-        reply, execution_trace={"outcome": product_outcome(reply, requested_fields=("material",))}
-    )
-    right = replace(
-        reply, execution_trace={"outcome": product_outcome(reply, requested_fields=("components",))}
-    )
-    assert not BusinessAgent._shadow_diff(left, right)["same_requested_fields"]
-
-
-def test_diff_redacts_costs_and_does_not_copy_source_documents():
-    reply = RoutedReply(
-        Intent.PRODUCT,
-        "成本价：66元\n顶喷｜采购价：12元\n配件采购总价：123元",
-        [
-            {"source_type": "product", "source_id": "1", "content": "secret-source"},
-        ],
-    )
-    diff = BusinessAgent._shadow_diff(reply, reply)
-    summary = diff["legacy_outcome"]["content_summary"]
-    assert "66" not in summary and "12" not in summary and "123" not in summary
-    assert "secret-source" not in str(diff)
-
-
-def test_shadow_never_delivers_v2_clarification_or_writes_formal_context(monkeypatch):
-    store = Catalog()
-    agent = BusinessAgent(store)
-    monkeypatch.setattr(
-        agent, "_business_settings", lambda: SimpleNamespace(product_query_v2_mode="shadow")
-    )
-    legacy = RoutedReply(
-        Intent.PRODUCT,
-        "材质：ABS外壳铜水路",
-        [
-            {"source_type": "product", "source_id": "product-1"},
-        ],
-    )
-    monkeypatch.setattr(agent, "_answer_product_legacy", lambda *args, **kwargs: legacy)
-    agent._last_product_by_user["employee-1"] = "legacy-selection"
-    decision = IntentDecision(Intent.PRODUCT, 0.99, "", "", source="planner_model")
-    first = agent._answer_product(
-        "employee-1", MODEL + "主体有哪些材料组成?", "", decision, plan(evidence="组成")
-    )
-    assert first.execution_trace["shadow_diff"]["same_semantics"]
-    second = agent._answer_product(
-        "employee-1", MODEL + "套装材料?", "", decision, plan(evidence="套装材料")
-    )
-    assert second.content == legacy.content
-    assert second.execution_trace["shadow_diff"]["v2_outcome"]["result_type"] == "clarification"
-    assert not agent._state_get(agent._product_query_context, "employee-1")
-    assert not agent._state_get(agent._product_shadow_query_context, "employee-1")
-    assert agent._last_product_by_user["employee-1"] == "legacy-selection"
-    assert len(store.calls) == 1
-
-
-def test_pending_choice_is_resolved_by_the_shared_slot_in_every_mode(monkeypatch):
-    """澄清接回不再依赖 V2 模式。
-
-    旧实现把待澄清状态放在 V2 上下文里，于是只有 on 模式能接回；shadow 模式下
-    员工照答会被重新索要型号——这正是被报告的两次对话缺陷。现在槽位由交付的
-    计划层写入，两种模式都能接回。
-    """
+def test_pending_choice_is_resolved_by_the_shared_slot():
+    """澄清接回由计划层共享槽位处理。"""
     agent = BusinessAgent(Catalog())
     fallback = IntentDecision(Intent.CONVERSATION, 0.5, "", "后者")
-    for mode in ("on", "shadow"):
-        monkeypatch.setattr(
-            agent,
-            "_business_settings",
-            lambda current=mode: SimpleNamespace(product_query_v2_mode=current),
-        )
-        # 每一轮都重新写入槽位，因为解析成功后会清空它。
-        answer(agent, MODEL + "套装材料", plan(evidence="套装材料"))
-        resolved = pending.resolve(agent, "employee-1", "后者")
-        assert resolved is not None, f"{mode} 模式下没有接住员工的选项"
-        assert resolved.tasks[0].product_query.fields == ("components",)
+    answer(agent, MODEL + "套装材料", plan(evidence="套装材料"))
+    resolved = pending.resolve(agent, "employee-1", "后者")
+    assert resolved is not None
+    assert resolved.tasks[0].product_query.fields == ("components",)
 
     # 计划层的上下文判断不再自行处理待澄清，避免两套机制并存。
     decided = _product_context_decision(agent, "employee-1", "后者", fallback)
@@ -456,27 +351,7 @@ def test_unrecognized_question_with_empty_plan_cannot_become_overview():
     assert reply.execution_trace["outcome"]["reason"] == "unspecified_fields"
 
 
-def test_sensitive_differences_are_detected_without_storing_sensitive_values():
-    sources = [{"source_type": "product", "source_id": "1"}]
-    diff = BusinessAgent._shadow_diff(
-        RoutedReply(Intent.PRODUCT, "成本价：66元", sources),
-        RoutedReply(Intent.PRODUCT, "成本价：77元", sources),
-    )
-    assert not diff["same_content"]
-    assert "66" not in diff["legacy_outcome"]["content_summary"]
-    assert "77" not in diff["v2_outcome"]["content_summary"]
-
-
-def test_multi_product_values_cannot_be_swapped_by_summary_normalization():
-    sources = [{"source_type": "product", "source_id": value} for value in ("A", "B")]
-    diff = BusinessAgent._shadow_diff(
-        RoutedReply(Intent.PRODUCT, "型号：A\n材质：ABS\n型号：B\n材质：铜", sources),
-        RoutedReply(Intent.PRODUCT, "型号：A\n材质：铜\n型号：B\n材质：ABS", sources),
-    )
-    assert not diff["same_semantics"]
-
-
-def test_legacy_permission_denial_is_not_a_fact_even_with_product_sources():
+def test_permission_denial_is_not_a_fact_even_with_product_sources():
     reply = RoutedReply(
         Intent.PRODUCT,
         "你当前没有查看成本价的权限。",

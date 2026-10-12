@@ -1,0 +1,12 @@
+{"id":"detail-full","query":"发我 LTA-822 的详细信息","expected":{"shape":"detail_full"}}
+{"id":"detail-material","query":"LY0601GT-Cu 的材质","expected":{"shape":"detail"}}
+{"id":"media-image","query":"发我 LTA-822 的图片","expected":{"shape":"media"}}
+{"id":"media-video","query":"发我 LTA-822 的视频","expected":{"shape":"media"}}
+{"id":"listing","query":"列出灰玻璃·枪灰的产品","expected":{"shape":"listing"}}
+{"id":"count","query":"我们现在有几种产品","expected":{"shape":"count"}}
+{"id":"aggregate","query":"现在的产品一共有多少种颜色","expected":{"shape":"aggregate"}}
+{"id":"rank","query":"最贵的前三款产品","expected":{"shape":"rank"}}
+{"id":"compare","query":"0653 和 0689 哪个贵","expected":{"shape":"compare"}}
+{"id":"clarification","query":"套装材料","expected":{"shape":"detail"}}
+{"id":"unknown-field","query":"LTA-822 的量子涂层","expected":{"shape":"detail"}}
+{"id":"unquoted-value","query":"列出蓝色产品","expected":{"shape":"listing"}}

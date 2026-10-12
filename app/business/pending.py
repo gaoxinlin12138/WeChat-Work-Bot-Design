@@ -63,7 +63,6 @@ def remember_product_query(
     *,
     option_labels: tuple[str, ...] = (),
     intent: str = "product_query",
-    writes_formal_context: bool = True,
 ) -> None:
     """由执行层直接写入待澄清的产品查询。
 
@@ -73,11 +72,10 @@ def remember_product_query(
     上下文，员工用位置指代回答（「后者」）时才有依据可用——那个词本身没有任何字段语义，
     按原话校验必然失败。
 
-    `writes_formal_context` 必须由 shadow 运行传 False：影子比较是观测，它提出的澄清
-    并没有交付给员工，因此既不能写正式 V2 上下文，也不能污染槽位。
+    产品查询现在只有正式 V2 链路，澄清结果统一写入正式待处理槽位。
     """
     state = _state(agent)
-    if state is None or not writes_formal_context:
+    if state is None:
         return
     option_fields = tuple(
         dict.fromkeys(

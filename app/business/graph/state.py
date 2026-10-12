@@ -131,6 +131,7 @@ def plan_to_payload(plan: TaskPlan) -> TaskPlanPayload:
                 "product_query": (
                     {
                         "operation": task.product_query.operation,
+                        "target": task.product_query.target,
                         "version": task.product_query.version,
                         "include_models": list(task.product_query.include_models),
                         "exclude_models": list(task.product_query.exclude_models),
@@ -187,6 +188,27 @@ def plan_to_payload(plan: TaskPlan) -> TaskPlanPayload:
                         "page": task.product_query.page,
                         "page_size": task.product_query.page_size,
                         "context_mode": task.product_query.context_mode,
+                        "required_references": [
+                            {
+                                "value": item.value,
+                                "kind": item.kind,
+                                "evidence": item.evidence,
+                                "source": item.source,
+                            }
+                            for item in task.product_query.required_references
+                        ],
+                        "required_filters": [
+                            {
+                                "field": item.field,
+                                "operator": item.operator,
+                                "value": item.value,
+                                "evidence": item.evidence,
+                                "source": item.source,
+                            }
+                            for item in task.product_query.required_filters
+                        ],
+                        "required_operation": task.product_query.required_operation,
+                        "resolved_product_ids": list(task.product_query.resolved_product_ids),
                         "ambiguities": [
                             {
                                 "code": item.code,
@@ -241,6 +263,27 @@ def plan_from_payload(payload: TaskPlanPayload) -> TaskPlan:
             for raw in raw_query.get("references", [])
             if isinstance(raw, dict) and raw.get("value")
         )
+        required_references = tuple(
+            ProductReference(
+                value=str(raw["value"]),
+                kind=str(raw.get("kind") or "fragment"),  # type: ignore[arg-type]
+                evidence=str(raw.get("evidence") or ""),
+                source=str(raw.get("source") or "fallback"),  # type: ignore[arg-type]
+            )
+            for raw in raw_query.get("required_references", [])
+            if isinstance(raw, dict) and raw.get("value")
+        )
+        required_filters = tuple(
+            ProductFilter(
+                field=str(raw["field"]),
+                operator=str(raw.get("operator") or "contains"),  # type: ignore[arg-type]
+                value=raw.get("value", ""),
+                evidence=str(raw.get("evidence") or ""),
+                source=str(raw.get("source") or "fallback"),  # type: ignore[arg-type]
+            )
+            for raw in raw_query.get("required_filters", [])
+            if isinstance(raw, dict) and raw.get("field")
+        )
         requests = tuple(
             ProductFieldRequest(
                 field=str(raw["field"]),
@@ -283,6 +326,7 @@ def plan_from_payload(payload: TaskPlanPayload) -> TaskPlan:
             decision,
             ProductQuery(
                 operation=str(raw_query.get("operation", "detail")),  # type: ignore[arg-type]
+                target=str(raw_query.get("target") or "product"),  # type: ignore[arg-type]
                 include_models=tuple(str(value) for value in raw_query.get("include_models", [])),
                 exclude_models=tuple(str(value) for value in raw_query.get("exclude_models", [])),
                 fields=tuple(str(value) for value in raw_query.get("fields", [])),
@@ -299,6 +343,18 @@ def plan_from_payload(payload: TaskPlanPayload) -> TaskPlan:
                 page_size=max(1, int(raw_query.get("page_size") or 5)),
                 context_mode=str(raw_query.get("context_mode") or "independent"),  # type: ignore[arg-type]
                 ambiguities=ambiguities,
+                required_references=required_references,
+                required_filters=required_filters,
+                required_operation=(
+                    str(raw_query.get("required_operation"))  # type: ignore[arg-type]
+                    if raw_query.get("required_operation")
+                    else None
+                ),
+                resolved_product_ids=tuple(
+                    str(value)
+                    for value in raw_query.get("resolved_product_ids", [])
+                    if str(value).strip()
+                ),
             ),
         )
 
