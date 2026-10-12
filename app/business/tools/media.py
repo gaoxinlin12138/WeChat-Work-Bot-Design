@@ -1,5 +1,6 @@
 """Product image/video lookup boundary; transport stays in app.wecom."""
 
+from dataclasses import replace
 from typing import Any
 
 import structlog
@@ -20,8 +21,21 @@ class MediaToolMixin:
         search_query: str,
         decision: IntentDecision,
         product_query: ProductQuery | None = None,
-        **_: object,
+        **kwargs: object,
     ) -> RoutedReply:
+        if product_query is not None and product_query.filters:
+            # Media lookup has no right to broaden or ignore a structured
+            # product predicate.  Route mixed requests through the same
+            # parameterized product executor used by product_query.
+            return self._answer_product_v2(
+                user_id,
+                original_query,
+                replace(product_query, operation="list"),
+                can_view_cost=bool(kwargs.get("can_view_cost", False)),
+                cost_access_message=str(
+                    kwargs.get("cost_access_message", "你当前没有查看成本价和采购价的权限。")
+                ),
+            )
         if product_query is not None and product_query.include_models:
             search_query = " ".join((*product_query.include_models, search_query))
         action = decision.media_action or MediaAction.LIST
@@ -56,6 +70,7 @@ class MediaToolMixin:
                 if clarification:
                     return clarification
                 related_product_id = product.source_id
+            self._state_pop(self._pending_media_by_user, user_id)
             results = self.store.search_media(
                 search_query,
                 media_type,

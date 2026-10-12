@@ -21,6 +21,7 @@ class ProductFocus:
     query_plan: dict[str, object] | None = None
     result_ids: tuple[str, ...] = ()
     result_models: tuple[str, ...] = ()
+    trusted_ids: tuple[str, ...] = ()
     page: int = 1
     total: int = 0
     source_query_fingerprint: str = ""
@@ -59,6 +60,7 @@ def focus_to_dict(focus: ProductFocus) -> dict[str, object]:
         "query_plan": focus.query_plan or {},
         "result_ids": list(focus.result_ids),
         "result_models": list(focus.result_models),
+        "trusted_ids": list(focus.trusted_ids),
         "page": focus.page,
         "total": focus.total,
         "source_query_fingerprint": focus.source_query_fingerprint,
@@ -74,6 +76,7 @@ def focus_from_dict(value: object) -> ProductFocus | None:
     try:
         raw_ids = value.get("result_ids", [])
         raw_models = value.get("result_models", [])
+        raw_trusted_ids = value.get("trusted_ids", [])
         ids = (
             tuple(str(item) for item in raw_ids if str(item).strip())
             if isinstance(raw_ids, (list, tuple))
@@ -84,6 +87,11 @@ def focus_from_dict(value: object) -> ProductFocus | None:
             if isinstance(raw_models, (list, tuple))
             else ()
         )
+        trusted_ids = (
+            tuple(str(item) for item in raw_trusted_ids if str(item).strip())
+            if isinstance(raw_trusted_ids, (list, tuple))
+            else ()
+        )
         raw_plan = value.get("query_plan")
         return ProductFocus(
             version=int(value.get("version") or FOCUS_VERSION),
@@ -91,6 +99,7 @@ def focus_from_dict(value: object) -> ProductFocus | None:
             query_plan=dict(raw_plan) if isinstance(raw_plan, dict) and raw_plan else None,
             result_ids=ids,
             result_models=models,
+            trusted_ids=trusted_ids,
             page=max(1, int(value.get("page") or 1)),
             total=max(0, int(value.get("total") or 0)),
             source_query_fingerprint=str(value.get("source_query_fingerprint") or ""),

@@ -29,6 +29,24 @@ def test_preparse_keeps_model_price_range_and_entity_count() -> None:
     assert len(fallback.filters) == 1
 
 
+def test_price_range_product_request_is_a_listing_even_with_send_wording() -> None:
+    message = "发我0601价格在200到250之间的产品"
+    parsed = preparse_product_query(message)
+
+    assert parsed.operation == "list"
+    assert parsed.required_operation == "list"
+    assert [(item.field, item.operator, item.value) for item in parsed.filters] == [
+        ("set_price", "between", (200.0, 250.0))
+    ]
+
+    fallback = plan_from_decision(
+        IntentDecision(Intent.PRODUCT, 0.99, "规则兜底", message), message
+    ).tasks[0].product_query
+    assert fallback is not None
+    assert fallback.operation == "list"
+    assert fallback.required_operation == "list"
+
+
 def test_preparse_supports_multiple_text_conditions_with_and_semantics() -> None:
     parsed = preparse_product_query("LY0653系列颜色为红色、出货地广东的产品有哪些")
     assert parsed.operation == "list"

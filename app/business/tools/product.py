@@ -309,6 +309,7 @@ class ProductToolMixin:
             self._product_focus,
             self._last_product_by_user,
             self._last_media_by_user,
+            self._pending_media_by_user,
             self._product_choices,
             self._product_catalog_context,
             self._product_query_context,
@@ -336,6 +337,65 @@ class ProductToolMixin:
             logger.warning("product_focus_migration_write_failed", error_type=type(exc).__name__)
         return focus
 
+    def _resolve_product_ordinal(
+        self,
+        user_id: str,
+        index: int,
+        focus: ProductFocus | None = None,
+    ) -> tuple[str, str] | None:
+        """Resolve a global result ordinal against the saved product query.
+
+        The list renderer shows global numbers (1..N), while focus stores only
+        the currently displayed page.  Re-run the saved, deterministic query at
+        the target page when the requested item is not on the current page.
+        """
+        if index < 0:
+            return None
+        focus = focus or self._get_product_focus(user_id)
+        if focus is None or not focus.is_valid():
+            return None
+        if focus.total and index >= focus.total:
+            return None
+        saved_query = product_query_from_dict(focus.query_plan)
+        if saved_query is None:
+            # Legacy/current-page-only state is safe only for page one.  Do not
+            # reinterpret a global ordinal as a current-page array index.
+            if focus.page != 1:
+                return None
+            return focus.item_at(index)
+
+        page_size = max(1, int(saved_query.page_size or 5))
+        target_page = index // page_size + 1
+        local_index = index % page_size
+        if target_page == focus.page:
+            return focus.item_at(local_index)
+
+        try:
+            target_query = replace(saved_query, page=target_page, page_size=page_size)
+            result = self.store.query_products_v2(target_query, include_sensitive=False)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("product_ordinal_resolution_failed", error_type=type(exc).__name__)
+            return None
+        if local_index >= len(result.items):
+            return None
+        item = result.items[local_index]
+        product_id = str(item.get("id") or "").strip()
+        model = str(item.get("model") or "").strip()
+        if not product_id:
+            return None
+        if product_id not in focus.trusted_ids:
+            trusted_focus = replace(
+                focus,
+                trusted_ids=tuple(dict.fromkeys((*focus.trusted_ids, product_id))),
+            )
+            try:
+                self._product_focus[user_id] = focus_to_dict(trusted_focus)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "product_ordinal_focus_write_failed", error_type=type(exc).__name__
+                )
+        return product_id, model
+
     def _write_product_focus(
         self,
         user_id: str,
@@ -346,7 +406,20 @@ class ProductToolMixin:
         page: int = 1,
         total: int = 0,
         pending: dict[str, object] | None = None,
+        preserve_existing_list: bool = False,
     ) -> ProductFocus:
+        existing = self._get_product_focus(user_id) if preserve_existing_list else None
+        if (
+            existing is not None
+            and existing.is_valid()
+            and existing.mode in {"list", "aggregate", "family_detail"}
+            and existing.query_plan
+            and mode == "detail"
+            and (items or preserve_existing_list)
+        ):
+            # A detail follow-up selects an entity; it must not destroy the
+            # list snapshot that gives later global ordinals their meaning.
+            return existing
         now = time.time()
         rows = items or []
         result_rows = [item for item in rows if item.get("id")]
@@ -666,6 +739,13 @@ class ProductToolMixin:
         # search_query）。守卫只看 original_query 会让后者一律落到下面的拒答。
         identifier_in_query = has_product_identifier(original_query)
         if not identifier_in_query and not has_product_identifier(search_query):
+            if decision.intent == Intent.PRODUCT_MEDIA:
+                self._pending_media_by_user[user_id] = {
+                    "media_action": str(decision.media_action or MediaAction.SEND),
+                    "media_type": decision.media_type,
+                    "media_role": decision.media_role,
+                    "query": original_query[:500],
+                }
             self._state_pop(self._product_choices, user_id)
             return None, RoutedReply(
                 decision.intent,
@@ -2708,6 +2788,9 @@ class ProductToolMixin:
                 items=[],
                 page=result.page,
                 total=result.total,
+                preserve_existing_list=(
+                    query.operation == "detail" and query.context_mode == "continuation"
+                ),
             )
         # 只要**给员工看了多款产品**就记下上下文，不按操作名判断。
         # 此前要求 operation == "list"，但「0653 的材质」这类片段型号会让模型给出
@@ -2731,6 +2814,9 @@ class ProductToolMixin:
                 items=[dict(item) for item in result.items],
                 page=result.page,
                 total=result.total,
+                preserve_existing_list=(
+                    query.operation == "detail" and query.context_mode == "continuation"
+                ),
             )
         if len(selected_ids) == 1:
             self._remember_product(user_id, selected_ids[0])

@@ -284,6 +284,11 @@ PRODUCT_OVERVIEW_FILLER_WORDS = (
     "给我发",
     "一下",
     "请",
+    "把",
+    "将",
+    "我想",
+    "想",
+    "要",
     # 指代与主体
     "这款",
     "那个",
@@ -335,6 +340,18 @@ def is_overview_request(message: str, references: tuple[ProductReference, ...]) 
         remainder = remainder.replace(_normalized(reference.value), "")
     remainder = remainder.strip("。！？!?，,：:")
     return _OVERVIEW_FILLER_PATTERN.fullmatch(remainder) is not None
+
+
+def is_overview_phrase(message: str) -> bool:
+    """Check an overview-only phrase after its product reference was removed.
+
+    Ordinal follow-ups use a context reference (for example, ``第五个``), which
+    is not literally present in the current message as a product model.  Keep
+    the vocabulary shared with explicit-model overview detection while requiring
+    a non-empty tail so a bare ordinal does not silently become full detail.
+    """
+    remainder = _normalized(message).strip("。！？!?，,：:")
+    return bool(remainder) and _OVERVIEW_FILLER_PATTERN.fullmatch(remainder) is not None
 
 
 def _filter_value_is_quoted(item: ProductFilter, message: str) -> bool:
@@ -447,6 +464,7 @@ PRODUCT_OPERATION_CATALOG: dict[ProductOperation, ProductOperationDefinition] = 
         "统计匹配产品的数量；不要求指定维度或字段",
         patterns=(
             r"(?:有多少|多少种|几种|有几个|几个|产品总数|产品数量).{0,8}(?:产品|型号|款|种)",
+            r"(?:产品|型号|款).{0,8}(?:有多少|多少种|几种|有几个|几个)",
             r"(?:产品|型号|款)的?(?:总数|数量)",
         ),
     ),
@@ -471,6 +489,18 @@ PRODUCT_OPERATION_CATALOG: dict[ProductOperation, ProductOperationDefinition] = 
 
 # 判定顺序：越具体的操作越先匹配，detail 是兜底因此不参与识别。
 _OPERATION_MATCH_ORDER: tuple[ProductOperation, ...] = ("count", "compare", "recommend")
+
+
+def _is_unscoped_product_overview(message: str) -> bool:
+    """识别没有可执行条件的产品概览问句。"""
+    normalized = _normalized(message).strip()
+    return bool(
+        re.fullmatch(
+            r"(?:现在|当前|目前|我们(?:现在)?|你们(?:现在)?)?"
+            r"(?:有什么|有哪些|有哪几种|有哪几款)产品(?:呀|啊|呢|吗|嘛|吧)?",
+            normalized,
+        )
+    )
 
 
 def detect_product_operation(query: str) -> ProductOperation | None:
@@ -566,6 +596,7 @@ def _preparse_text_filters(message: str) -> tuple[ProductFilter, ...]:
                 not value
                 or value in aliases
                 or value.endswith(("主体", "产品", "套装"))
+                or value.startswith(("支持", "带有", "带", "具有", "含有", "有"))
                 or any(
                     alias in value
                     for _, field_aliases in _PREPARSE_TEXT_FIELDS
@@ -589,13 +620,17 @@ def _preparse_text_filters(message: str) -> tuple[ProductFilter, ...]:
         found.append(
             ProductFilter("special_function", "is_present", "", generic.group(), "fallback")
         )
-    else:
+    elif not _is_unscoped_product_overview(compact):
         for match in re.finditer(
-            r"(?:支持|带有|带|具有|含有|有)\s*(?P<value>[\u3400-\u9fffA-Za-z0-9·_.+\-/]{1,24})(?:功能)?(?:的产品|产品)?",
+            r"(?:支持|带有|带|具有|含有|有)\s*"
+            r"(?P<value>[\u3400-\u9fffA-Za-z0-9·_.+\-/]{1,24}?)"
+            r"(?:功能)?(?=的产品|产品|且|并且|同时|以及|和|与|[，,；;。]|$)",
             compact,
         ):
             value = _preparse_value(match.group("value"))
-            if value and value != "特殊" and not value.startswith(("多少", "几个", "哪些", "哪")):
+            if value and value != "特殊" and not value.startswith(
+                ("什么", "多少", "几个", "哪些", "哪")
+            ):
                 found.append(
                     ProductFilter("special_function", "contains", value, match.group(), "fallback")
                 )
@@ -722,7 +757,12 @@ def preparse_product_query(message: str) -> ProductQuery:
             evidence="主体价" if re.search(r"主体价|主体价格", message) else "价格",
             source="fallback",
         )
-    if operation is None and re.search(r"(?:列出|有哪些|哪几款|哪些产品)", message):
+    if operation is None and filters:
+        # A numeric/text predicate describes a candidate set.  Treat it as a
+        # listing even when the employee says “发我…产品” instead of “有哪些”;
+        # otherwise a detail plan can discard the predicate and ask for a field.
+        operation = "list"
+    if operation is None and re.search(r"(?:列出|有什么|有哪些|哪几款|哪些产品)", message):
         operation = "list"
     # Entity counts do not have a field/value predicate.  The broad text
     # pre-parser can otherwise mistake the tail of “有几种产品” for a
@@ -750,7 +790,11 @@ def preparse_product_query(message: str) -> ProductQuery:
         page_size=page_size,
         required_references=references,
         required_filters=tuple(filters),
-        required_operation=operation,
+        required_operation=(
+            operation
+            if operation != "list" or _is_unscoped_product_overview(message) or bool(filters)
+            else None
+        ),
     )
 
 
@@ -790,7 +834,8 @@ def validate_product_query(
     preparse = preparse_product_query(message)
     required_operation = product_query.required_operation or (
         preparse.required_operation
-        if preparse.required_operation in {"count", "compare", "recommend", "aggregate"}
+        if preparse.required_operation
+        in {"count", "compare", "recommend", "aggregate", "list"}
         else None
     )
     required_references = product_query.required_references or preparse.required_references
@@ -835,8 +880,8 @@ def validate_product_query(
 
     references: list[ProductReference] = []
     resolved_ids: list[str] = list(product_query.resolved_product_ids)
-    if trusted_focus is not None and trusted_focus.result_ids:
-        allowed_ids = set(trusted_focus.result_ids)
+    if trusted_focus is not None and (trusted_focus.result_ids or trusted_focus.trusted_ids):
+        allowed_ids = {*trusted_focus.result_ids, *trusted_focus.trusted_ids}
         if any(item not in allowed_ids for item in resolved_ids):
             errors.append("上下文产品不在上一轮展示结果中")
             resolved_ids = []
@@ -844,10 +889,13 @@ def validate_product_query(
         if not reference.value.strip():
             continue
         focus_id = None
-        if reference.source == "context" and trusted_focus is not None and trusted_focus.result_ids:
+        if reference.source == "context" and trusted_focus is not None and (
+            trusted_focus.result_ids or trusted_focus.trusted_ids
+        ):
+            allowed_ids = {*trusted_focus.result_ids, *trusted_focus.trusted_ids}
             if reference.value.startswith("id:"):
                 candidate_id = reference.value.removeprefix("id:")
-                if candidate_id in trusted_focus.result_ids:
+                if candidate_id in allowed_ids:
                     focus_id = candidate_id
             else:
                 focus_id = trusted_focus.model_to_id(reference.value)

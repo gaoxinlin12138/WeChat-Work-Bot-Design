@@ -44,6 +44,9 @@ class BusinessAgent(KnowledgeToolMixin, ProductToolMixin, MediaToolMixin, ReplyS
         self._last_media_by_user = SharedState(
             getattr(get_settings(), "redis_url", None), "wecom:last-media"
         )
+        self._pending_media_by_user = SharedState(
+            getattr(get_settings(), "redis_url", None), "wecom:pending-media"
+        )
         self._reply_sessions = ReplySessionState(
             getattr(get_settings(), "redis_url", None), "wecom:reply-session"
         )

@@ -37,6 +37,9 @@ from app.business.product_focus import (
 from app.business.product_query import (
     ProductFieldRequest,
     ProductReference,
+    fallback_field_requests,
+    is_overview_phrase,
+    preparse_product_query,
     product_query_from_dict,
 )
 from app.business.product_selection import has_product_identifier
@@ -82,7 +85,24 @@ _FOLLOW_UP_FIELDS = (
 )
 
 
-def _ordinal_detail_follow_up_plan(query: str, product_context: object) -> TaskPlan | None:
+def _pending_media_is_model_only(query: str) -> bool:
+    """Only consume a media pending slot for a bare model follow-up."""
+    if not has_product_identifier(query):
+        return False
+    parsed = preparse_product_query(query)
+    if parsed.filters or fallback_field_requests(query):
+        return False
+    # “发我0601产品” is a product request, while a bare “0601” is the
+    # expected answer to the previous media clarification.
+    return not re.search(r"产品|型号|系列|款|目录|清单", query)
+
+
+def _ordinal_detail_follow_up_plan(
+    query: str,
+    product_context: object,
+    *,
+    selected_override: tuple[str, str] | None = None,
+) -> TaskPlan | None:
     if isinstance(product_context, ProductFocus):
         focus = product_context
     else:
@@ -99,12 +119,29 @@ def _ordinal_detail_follow_up_plan(query: str, product_context: object) -> TaskP
     index, marker = parsed
     if marker == "后者" and len(focus.result_ids or focus.result_models) != 2:
         return None
-    selected = focus.item_at(index)
+    # Focus stores the current page.  A global ordinal is only directly
+    # addressable from page one in legacy/current-page-only payloads; the
+    # BusinessAgent resolver supplies cross-page selections before this helper
+    # is called in production.
+    page_size = 5
+    if focus.query_plan:
+        saved_query = product_query_from_dict(focus.query_plan)
+        if saved_query is not None:
+            page_size = max(1, int(saved_query.page_size or 5))
+    page_start = (max(1, focus.page) - 1) * page_size
+    local_index = index - page_start
+    selected = selected_override
+    if selected is None:
+        selected = focus.item_at(local_index) if 0 <= local_index else None
+        if focus.page == 1 and selected is None:
+            selected = focus.item_at(index)
     if selected is None:
         return None
     model_id, model = selected
     if not model_id:
         return None
+    overview_tail = query.replace(marker, "", 1)
+    is_overview = is_overview_phrase(overview_tail)
     field = next(
         iter(
             sorted(
@@ -120,29 +157,32 @@ def _ordinal_detail_follow_up_plan(query: str, product_context: object) -> TaskP
         ),
         None,
     )
-    if field is None:
+    if field is None and not is_overview:
         return None
-    reference_value = model or f"id:{model_id}"
+    has_resolved_id = selected_override is not None or bool(focus.result_ids)
+    reference_value = (
+        f"id:{model_id}" if has_resolved_id else model
+    )
     reference = ProductReference(
         reference_value,
-        "exact" if model else "context",
-        reference_value,
+        "context",
+        marker,
         "context",
     )
     # The product comes from the previous displayed result; the field is a
     # fresh request in the current message and must be grounded there.
-    request = ProductFieldRequest(field[0], field[1], "current")
+    request = ProductFieldRequest(field[0], field[1], "current") if field else None
     from app.business.product_query import ProductQuery
 
     plan = ProductQuery(
         operation="detail",
         references=(reference,),
         include_models=(model,) if model else (),
-        requested_fields=(request,),
-        fields=(field[0],),
+        requested_fields=(request,) if request else (),
+        fields=(field[0],) if field else (),
         context_mode="continuation",
-        allow_overview=False,
-        resolved_product_ids=(model_id,) if focus.result_ids else (),
+        allow_overview=is_overview,
+        resolved_product_ids=(model_id,) if has_resolved_id and model_id else (),
     )
     decision = IntentDecision(
         intent=Intent.PRODUCT,
@@ -516,6 +556,36 @@ def create_plan(
     resolved = pending.resolve(agent, user_id, query)
     if resolved is not None:
         return {"plan": plan_to_payload(resolved)}
+    pending_media = agent._state_get(
+        agent._pending_media_by_user, user_id
+    )
+    if isinstance(pending_media, dict) and _pending_media_is_model_only(query):
+        # 型号补充只填充原待办的媒体对象，不能把“发送视频”重置成产品详情。
+        decision = IntentDecision(
+            intent=Intent.PRODUCT_MEDIA,
+            confidence=0.99,
+            reason="补充上一轮待发送媒体的产品型号",
+            query_for_search=query,
+            source="conversation_state",
+            media_action=MediaAction.SEND,
+            media_type=(
+                str(pending_media.get("media_type"))
+                if pending_media.get("media_type") in {"image", "video"}
+                else None
+            ),
+            media_role=(
+                str(pending_media.get("media_role"))
+                if pending_media.get("media_role")
+                in {"product_image", "body_image", "configuration_image", "product_video"}
+                else None
+            ),
+        )
+        return {"plan": plan_to_payload(plan_from_decision(decision, query))}
+    if isinstance(pending_media, dict) and has_product_identifier(query):
+        # A new structured product request supersedes the old media request;
+        # leaving it alive would make the next model-containing query inherit
+        # the stale send-video action again.
+        agent._state_pop(agent._pending_media_by_user, user_id)
     recent_context = agent._recent_intent_context(user_id)
     active_session = agent._state_get(agent._reply_sessions, user_id)
     if active_session is not None and not isinstance(active_session, ReplySession):
@@ -537,9 +607,20 @@ def create_plan(
                 "发给我",
             )
         )
+        or ordinal_index(query) is not None
     )
     product_context = agent._get_product_focus(user_id)
-    ordinal_follow_up = _ordinal_detail_follow_up_plan(query, product_context)
+    ordinal = ordinal_index(query)
+    ordinal_selection = (
+        agent._resolve_product_ordinal(user_id, ordinal[0], product_context)
+        if ordinal is not None
+        else None
+    )
+    ordinal_follow_up = _ordinal_detail_follow_up_plan(
+        query,
+        product_context,
+        selected_override=ordinal_selection,
+    )
     if ordinal_follow_up is not None:
         return {"plan": plan_to_payload(ordinal_follow_up)}
     count_follow_up = _count_listing_follow_up_plan(query, product_context)
@@ -626,7 +707,19 @@ def clarification_node(
     plan = plan_from_payload(state["plan"])
     # 澄清分支不经过 execute_task，如果不在这里记录，本轮已解析出的型号和字段就丢了，
     # 员工回答之后系统只会重新索要型号。
-    pending.remember(runtime.context.agent, runtime.context.user_id, plan)
+    media_task = next(
+        (task for task in plan.tasks if task.decision.intent == Intent.PRODUCT_MEDIA),
+        None,
+    )
+    if media_task is not None and media_task.decision.media_action == MediaAction.SEND:
+        runtime.context.agent._pending_media_by_user[runtime.context.user_id] = {
+            "media_action": str(media_task.decision.media_action),
+            "media_type": media_task.decision.media_type,
+            "media_role": media_task.decision.media_role,
+            "query": state.get("normalized_query", "")[:500],
+        }
+    else:
+        pending.remember(runtime.context.agent, runtime.context.user_id, plan)
     reply = RoutedReply(
         plan.primary_intent,
         plan.clarification_question or "为了避免答错，请补充你希望我优先完成的任务。",

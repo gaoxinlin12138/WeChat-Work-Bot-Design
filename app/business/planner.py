@@ -546,7 +546,8 @@ def _fallback_product_query(query: str, decision: IntentDecision) -> ProductQuer
         required_filters=tuple(preparsed.required_filters),
         required_operation=(
             operation
-            if preparsed.required_operation in {"count", "compare", "recommend", "aggregate"}
+            if preparsed.required_operation
+            in {"count", "compare", "recommend", "aggregate", "list"}
             else None
         ),
     )
@@ -794,7 +795,8 @@ def parse_task_plan(
                 required_filters=preparse.required_filters,
                 required_operation=(
                     preparse.required_operation
-                    if preparse.required_operation in {"count", "compare", "recommend", "aggregate"}
+                    if preparse.required_operation
+                    in {"count", "compare", "recommend", "aggregate", "list"}
                     else None
                 ),
             )

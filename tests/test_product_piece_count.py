@@ -123,6 +123,11 @@ def test_product_model_suffix_is_a_supported_alias():
     assert mentions_identifier_alias("830图片发我", "LTA-822") is False
 
 
+@pytest.mark.parametrize("query", ["把他的视频发我", "把它的视频发我"])
+def test_selected_product_media_follow_up_accepts_common_pronouns(query):
+    assert is_product_follow_up(query) is True
+
+
 def test_product_model_before_compound_field_name_is_not_mistaken_for_quantity():
     assert has_product_identifier("LTA-822套装价多少") is True
     assert has_product_identifier("822件数还有多少") is True
