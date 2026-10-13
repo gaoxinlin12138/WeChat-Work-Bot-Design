@@ -70,6 +70,7 @@ class BusinessGraphState(TypedDict, total=False):
     query: str
     normalized_query: str
     plan: TaskPlanPayload
+    canonical_request: dict[str, object]
     task_index: int
     task_replies: list[RoutedReplyPayload]
     reply: RoutedReplyPayload

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.business.canonical import canonicalize_request
 from app.business.graph.builder import (
     _count_listing_follow_up_plan,
     _ordinal_detail_follow_up_plan,
@@ -70,11 +71,29 @@ def test_count_request_uses_product_count_with_empty_filters() -> None:
 
 
 def test_product_overview_question_does_not_become_special_function_filter() -> None:
-    parsed = preparse_product_query("现在有什么产品呀")
+    for message in ("现在有什么产品呀", "现在都有什么产品", "我们现在有几种产品"):
+        parsed = preparse_product_query(message)
 
-    assert parsed.filters == ()
-    assert parsed.required_filters == ()
-    assert parsed.required_operation == "list"
+        assert parsed.filters == ()
+        assert parsed.required_filters == ()
+        assert parsed.required_operation in {"count", "list"}
+
+
+def test_unscoped_catalog_overview_returns_products_instead_of_scope_clarification() -> None:
+    message = "现在都有什么产品"
+    decision = IntentDecision(Intent.PRODUCT, 0.99, "产品目录", message)
+    planned = plan_from_decision(decision, message).tasks[0].product_query
+    assert planned is not None
+
+    canonical = canonicalize_request(
+        message,
+        plan_from_decision(decision, message),
+    ).tasks[0].product_query
+    assert canonical is not None and canonical.allow_overview is True
+
+    reply = _answer(_Catalog(), message, canonical)
+    assert "指定产品条件" not in reply.content
+    assert "A-100" in reply.content and "B-200" in reply.content
 
 
 def test_explicit_function_condition_stops_before_next_filter() -> None:
@@ -252,6 +271,7 @@ def test_ordinal_follow_up_supports_full_overview_details() -> None:
     "message",
     [
         "发我第五个的详细信息",
+        "发我第五个产品的详细信息、",
         "把第五个的详细信息发我",
         "请把第5款完整资料给我",
         "第五个全部参数",

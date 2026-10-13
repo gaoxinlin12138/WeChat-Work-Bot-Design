@@ -1,0 +1,1576 @@
+{
+  "schema_version": 1,
+  "mode": "real-database-read-only-side-by-side",
+  "read_only": true,
+  "sent_messages": 0,
+  "mutated_records": 0,
+  "corpus": "tmp\\audit-export\\queries.jsonl",
+  "summary": {
+    "total": 19,
+    "product_executor_comparisons": 19,
+    "plan_only": 0,
+    "shape_mismatches": 1,
+    "expected_corrections": 0,
+    "answer_differences": 2,
+    "unresolved_comparisons": 2,
+    "validation_failures": 0
+  },
+  "limitations": [
+    "规则回放未启用大模型；这代表确定性降级路径，不代表线上 planner_model 路径。",
+    "制度和话术只做统一计划审查，尚未执行新域执行器。",
+    "答案文本可能因渲染细节不同而不同；事实一致性需要人工抽查差异项。",
+    "真实资料库当前只有已发布的实际产品；历史型号不存在时的 no_result 是资料状态，不是计划错误。"
+  ],
+  "results": [
+    {
+      "case_id": "audit-0001",
+      "query": "[菜刀]",
+      "recorded_intent": "conversation",
+      "old_reply": "知识库中没有足够依据，暂时无法可靠回答。",
+      "new_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "old_plan": null,
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": null
+    },
+    {
+      "case_id": "audit-0002",
+      "query": "我们现在有多少种产品",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0002",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 141.76600000064354,
+          "new": 131.70940000054543
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0003",
+      "query": "我们现在有几种产品",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0003",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 137.15870000123687,
+          "new": 129.38559999929566
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0004",
+      "query": "现在有多少种产品啊。",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0004",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 132.57220000014058,
+          "new": 136.57249999960186
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0005",
+      "query": "分别是哪两种产品。",
+      "recorded_intent": "conversation",
+      "old_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "new_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0005",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 5.087699999421602,
+          "new": 1.0265000000799773
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0006",
+      "query": "现在有多少种产品啊",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0006",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 137.7721000008023,
+          "new": 130.33030000042345
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0007",
+      "query": "分别是哪两种产品",
+      "recorded_intent": "product_query",
+      "old_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "new_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0007",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 4.952499999490101,
+          "new": 0.9498999988863943
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0008",
+      "query": "具体是哪两个",
+      "recorded_intent": "product_query",
+      "old_reply": "在已发布资料中找到以下内容：\n\n6 内容： / 6.1 工作时间规定 / 6.1.2 出勤时间：\n出勤类型 出勤时间 备注\n8H/天 上午：08:30-11:30；下午：12:30-17:30\n9H/天 上午：07:30-11:30；下午：12:30-17:30 加班：18:00-20:30\n6 内容： / 6.2 打卡规定\n6 内容： / 6.2 打卡规定 / 6.2.1 员工上下班或出勤中途离岗、返岗必须打卡（包括加班、假期值班时） 。\n6 内容： / 6.2 打卡规定 / 6.2.2 两个班次之间打卡须间隔 10 分钟以上方为有效。\n6 内\n\n6 内容： / 6.2 奖惩措施\n小功 200-500 元/次 小过 100-300 元/次\n大功 500-1000 元/次 大过 300-500 元/次\n特别奖励  开除 开除，追究责任\n6 内容： / 6.3 奖惩原则\n6 内容： / 6.3 奖惩原则 / 6.3.1 以客观事实为依据，公平合理，对事不对人。\n6 内容： / 6.3 奖惩原则 / 6.3.2 物质鼓励、精神激励结合，惩罚与教育同步。\n6 内容： / 6.3 奖惩原则 / 6.3.3 注重时效性，奖励为主，惩罚为辅。\n6 内容： / 6.3 奖惩\n\n6 内容： / 6.12 添加微信好友规范\n6 内容： / 6.12 添加微信好友规范 / 6.12.1 当面添加微信好友时，应遵循由“尊者（上司、客人、女士、甲方） ”出示二\n维码的原则。在对方同意加微信好友请求后，及时表明“我扫您” 。加好友成\n功后，应及时发送“公司+职位+名字+手机号码”给对方，同时辅以“有幸相\n识，以后您有事，请随时招呼/联系”等的话术。\n6 内容： / 6.12 添加微信好友规范 / 6.12.2 若为远程添加好友时，为了让“尊者”有更多的知情权和加大通过概率，在发\n送添加好友申请时应自\n\n引用依据：\n- 【《YY-HR-SD-05 考勤管理制度(202626.9.14更新)》｜第6.1、6.1.2、6.2、6.2.1、6.2.2、6.2.3、6.2.4条｜PDF第4页】\n- 【《YY-HR-SD-10 奖惩管理制度》｜第6.2、6.3、6.3.1、6.3.2、6.3.3、6.3.4、6.4、6.4.1条｜PDF第4页】\n- 【《YY-HR-SD-11 员工日常行为管理制度》｜第6.12、6.12.1、6.12.2、6.13条｜PDF第7页】",
+      "new_reply": "无法可靠确认你要查询的字段，请说明想了解哪项产品信息，例如主体材质或套装配件。",
+      "old_plan": null,
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": null
+    },
+    {
+      "case_id": "audit-0009",
+      "query": "最便宜的产品的价格是多少。",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品，无法统计。",
+      "new_reply": "当前没有符合条件的产品，无法统计。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "价格",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": {
+          "kind": "min",
+          "field": "set_price",
+          "limit": 30,
+          "evidence": "价格",
+          "source": "fallback"
+        },
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "价格",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": {
+          "kind": "min",
+          "field": "set_price",
+          "limit": 30,
+          "evidence": "价格",
+          "source": "fallback"
+        },
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "aggregate",
+          "subjects": [],
+          "fields": [
+            {
+              "name": "set_price",
+              "evidence": "价格",
+              "source": "fallback"
+            }
+          ],
+          "filters": [],
+          "aggregate": {
+            "kind": "min",
+            "field": "set_price",
+            "limit": 30,
+            "evidence": "价格",
+            "source": "fallback"
+          },
+          "sort": [],
+          "page": 1,
+          "page_size": 5,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0009",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 133.27709999975923,
+          "new": 130.9916999998677
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0010",
+      "query": "现在有多少种产品",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0010",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 136.7026000007172,
+          "new": 131.40220000059344
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0011",
+      "query": "有哪些产品 第二个多少钱",
+      "recorded_intent": "product_query",
+      "old_reply": "请先提供具体产品型号，例如“LY0653GDT-T 材质”。",
+      "new_reply": "产品库中没有找到对应产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "model",
+            "evidence": "哪些产品",
+            "source": "fallback"
+          },
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "listing",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "model",
+            "evidence": "哪些产品",
+            "source": "fallback"
+          },
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "listing",
+          "subjects": [],
+          "fields": [
+            {
+              "name": "model",
+              "evidence": "哪些产品",
+              "source": "fallback"
+            },
+            {
+              "name": "set_price",
+              "evidence": "多少钱",
+              "source": "fallback"
+            }
+          ],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 5,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0011",
+        "shape_match": false,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": false,
+        "latency_ms": {
+          "old": 5.110699999931967,
+          "new": 226.3874999989639
+        },
+        "issues": [
+          "shape",
+          "answer"
+        ],
+        "passed": false
+      }
+    },
+    {
+      "case_id": "audit-0012",
+      "query": "第二个多少钱",
+      "recorded_intent": "product_query",
+      "old_reply": "请先提供具体产品型号，例如“LY0653GDT-T 材质”。",
+      "new_reply": "请先提供具体产品型号，例如“LY0653GDT-T 材质”。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail",
+          "subjects": [],
+          "fields": [
+            {
+              "name": "set_price",
+              "evidence": "多少钱",
+              "source": "fallback"
+            }
+          ],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0012",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 5.252499999187421,
+          "new": 1.062600000295788
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0013",
+      "query": "最便宜的产品多少钱",
+      "recorded_intent": "product_query",
+      "old_reply": "这个统计暂时做不了。可以统计：颜色、系列、材质这类有多少种，以及套装价、主体价、件数这类的高低或平均。",
+      "new_reply": "当前没有符合条件的产品，无法统计。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "set_price",
+            "evidence": "多少钱",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": {
+          "kind": "min",
+          "field": "set_price",
+          "limit": 30,
+          "evidence": "多少钱",
+          "source": "fallback"
+        },
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "aggregate",
+          "subjects": [],
+          "fields": [
+            {
+              "name": "set_price",
+              "evidence": "多少钱",
+              "source": "fallback"
+            }
+          ],
+          "filters": [],
+          "aggregate": {
+            "kind": "min",
+            "field": "set_price",
+            "limit": 30,
+            "evidence": "多少钱",
+            "source": "fallback"
+          },
+          "sort": [],
+          "page": 1,
+          "page_size": 5,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0013",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": false,
+        "latency_ms": {
+          "old": 5.642500000249129,
+          "new": 137.2618000004877
+        },
+        "issues": [
+          "answer"
+        ],
+        "passed": false
+      }
+    },
+    {
+      "case_id": "audit-0014",
+      "query": "主体价格最低的是哪款",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品，无法统计。",
+      "new_reply": "当前没有符合条件的产品，无法统计。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "body_price",
+            "evidence": "主体价格",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": {
+          "kind": "min",
+          "field": "body_price",
+          "limit": 30,
+          "evidence": "主体价",
+          "source": "fallback"
+        },
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "aggregate",
+        "subjects": [],
+        "fields": [
+          {
+            "name": "body_price",
+            "evidence": "主体价格",
+            "source": "fallback"
+          }
+        ],
+        "filters": [],
+        "aggregate": {
+          "kind": "min",
+          "field": "body_price",
+          "limit": 30,
+          "evidence": "价格",
+          "source": "fallback"
+        },
+        "sort": [],
+        "page": 1,
+        "page_size": 5,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "aggregate",
+          "subjects": [],
+          "fields": [
+            {
+              "name": "body_price",
+              "evidence": "主体价格",
+              "source": "fallback"
+            }
+          ],
+          "filters": [],
+          "aggregate": {
+            "kind": "min",
+            "field": "body_price",
+            "limit": 30,
+            "evidence": "价格",
+            "source": "fallback"
+          },
+          "sort": [],
+          "page": 1,
+          "page_size": 5,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0014",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 133.13119999838818,
+          "new": 126.78050000067742
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0015",
+      "query": "现在有多少种产品，分别是什么产品",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0015",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 133.68640000044252,
+          "new": 128.40159999905154
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0016",
+      "query": "现在有多少种产品，分别是什么",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0016",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 138.3224999990489,
+          "new": 125.80589999924996
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0017",
+      "query": "发我LTA-822的详细信息",
+      "recorded_intent": "product_query",
+      "old_reply": "产品库中没有找到对应产品。",
+      "new_reply": "产品库中没有找到对应产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail_full",
+        "subjects": [
+          {
+            "value": "lta-822",
+            "kind": "model",
+            "evidence": "lta-822",
+            "source": "current"
+          }
+        ],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail_full",
+        "subjects": [
+          {
+            "value": "lta-822",
+            "kind": "model",
+            "evidence": "lta-822",
+            "source": "current"
+          }
+        ],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail_full",
+          "subjects": [
+            {
+              "value": "lta-822",
+              "kind": "model",
+              "evidence": "lta-822",
+              "source": "current"
+            }
+          ],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0017",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 367.1578000012232,
+          "new": 252.26499999916996
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0018",
+      "query": "发我LTA-822产品的详细信息",
+      "recorded_intent": "product_query",
+      "old_reply": "产品库中没有找到对应产品。",
+      "new_reply": "产品库中没有找到对应产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail_full",
+        "subjects": [
+          {
+            "value": "lta-822",
+            "kind": "model",
+            "evidence": "lta-822",
+            "source": "current"
+          }
+        ],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "detail_full",
+        "subjects": [
+          {
+            "value": "lta-822",
+            "kind": "model",
+            "evidence": "lta-822",
+            "source": "current"
+          }
+        ],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "detail_full",
+          "subjects": [
+            {
+              "value": "lta-822",
+              "kind": "model",
+              "evidence": "lta-822",
+              "source": "current"
+            }
+          ],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0018",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 369.0740000001824,
+          "new": 271.1689000007027
+        },
+        "issues": [],
+        "passed": true
+      }
+    },
+    {
+      "case_id": "audit-0019",
+      "query": "现在有多少产品",
+      "recorded_intent": "product_query",
+      "old_reply": "当前没有符合条件的产品。",
+      "new_reply": "当前没有符合条件的产品。",
+      "old_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_plan": {
+        "version": 1,
+        "domain": "product",
+        "shape": "count",
+        "subjects": [],
+        "fields": [],
+        "filters": [],
+        "aggregate": null,
+        "sort": [],
+        "page": 1,
+        "page_size": 1,
+        "delivery": "text",
+        "context_mode": "independent",
+        "clarification": null
+      },
+      "new_validation": {
+        "pass": true,
+        "issues": [],
+        "plan": {
+          "version": 1,
+          "domain": "product",
+          "shape": "count",
+          "subjects": [],
+          "fields": [],
+          "filters": [],
+          "aggregate": null,
+          "sort": [],
+          "page": 1,
+          "page_size": 1,
+          "delivery": "text",
+          "context_mode": "independent",
+          "clarification": null
+        },
+        "corrected": false
+      },
+      "execution_mode": "read_only_product_executor",
+      "expected_correction": false,
+      "comparison": {
+        "case_id": "audit-0019",
+        "shape_match": true,
+        "subjects_match": true,
+        "fields_match": true,
+        "filters_match": true,
+        "permissions_match": true,
+        "answer_match": true,
+        "latency_ms": {
+          "old": 229.4889000004332,
+          "new": 129.88189999850874
+        },
+        "issues": [],
+        "passed": true
+      }
+    }
+  ]
+}

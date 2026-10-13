@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 
 from app.business import pending
+from app.business.canonical import canonicalize_request
 from app.business.graph.reply_script import get_reply_script_graph
 from app.business.graph.state import (
     BusinessGraphContext,
@@ -26,6 +27,7 @@ from app.business.intent import (
     fallback_intent_decision,
     is_media_send_follow_up,
     is_product_catalog_query,
+    media_requests,
 )
 from app.business.planner import PlannedTask, TaskPlan, plan_from_decision, plan_tasks
 from app.business.product_focus import (
@@ -141,7 +143,12 @@ def _ordinal_detail_follow_up_plan(
     if not model_id:
         return None
     overview_tail = query.replace(marker, "", 1)
-    is_overview = is_overview_phrase(overview_tail)
+    # Natural Chinese often keeps the subject after an ordinal ("第五个产品的
+    # 详细信息").  The ordinal marker has already supplied that subject, so
+    # tolerate one leftover “产品” token when checking the overview wrapper.
+    is_overview = is_overview_phrase(overview_tail) or is_overview_phrase(
+        overview_tail.replace("产品", "", 1)
+    )
     field = next(
         iter(
             sorted(
@@ -464,6 +471,76 @@ def _apply_media_context(
     )
 
 
+def _apply_ordinal_media_context(
+    plan: TaskPlan,
+    *,
+    query: str,
+    selected: tuple[str, str] | None,
+) -> TaskPlan:
+    """Bind a media request such as ``第九个的图片`` to the displayed item."""
+    if selected is None or len(plan.tasks) != 1:
+        return plan
+    task = plan.tasks[0]
+    if task.decision.intent != Intent.PRODUCT_MEDIA:
+        return plan
+    product_id, model = selected
+    if not model:
+        return plan
+    decision = replace(
+        task.decision,
+        confidence=max(task.decision.confidence, 0.99),
+        reason="承接上一轮产品列表，发送指定序号产品媒体",
+        query_for_search=f"{model} {query}",
+        source="product_query_context",
+        needs_clarification=False,
+        clarification_question="",
+    )
+    # Keep the id in the task-local product plan when one exists.  The media
+    # tool still receives the model in query_for_search for legacy plans.
+    product_query = task.product_query
+    if product_query is not None:
+        product_query = replace(
+            product_query,
+            include_models=(model,),
+            references=(ProductReference(f"id:{product_id}", "context", "ordinal", "context"),),
+            resolved_product_ids=(product_id,),
+            context_mode="continuation",
+        )
+    return replace(
+        plan,
+        tasks=(replace(task, decision=decision, product_query=product_query),),
+        needs_clarification=False,
+        clarification_question="",
+    )
+
+
+def _expand_compound_media_tasks(plan: TaskPlan, query: str) -> TaskPlan:
+    """Fan out a single media task when the employee requests image and video."""
+    if len(plan.tasks) != 1:
+        return plan
+    task = plan.tasks[0]
+    if task.decision.intent != Intent.PRODUCT_MEDIA:
+        return plan
+    requested = media_requests(query)
+    if len(requested) <= 1:
+        return plan
+    tasks = tuple(
+        replace(
+            task,
+            decision=replace(
+                task.decision,
+                media_action=task.decision.media_action or MediaAction.SEND,
+                media_type=media_type,
+                media_role=media_role,
+                needs_clarification=False,
+                clarification_question="",
+            ),
+        )
+        for media_type, media_role in requested
+    )
+    return replace(plan, tasks=tasks)
+
+
 def _prefetch_embedding(plan: TaskPlan, query: str, runtime: Runtime[BusinessGraphContext]) -> None:
     from app.business import service
 
@@ -610,6 +687,20 @@ def create_plan(
         or ordinal_index(query) is not None
     )
     product_context = agent._get_product_focus(user_id)
+    # A previous media clarification is superseded by a non-media follow-up
+    # that can be bound to the trusted product focus (for example, after
+    # ``把它的图片和视频都发我`` the employee asks ``它的材质是什么``).
+    # Leaving the pending media slot alive would make a later model-only reply
+    # inherit a stale send action.
+    if (
+        isinstance(pending_media, dict)
+        and not media_requests(query)
+        and any(marker in query for marker in ("它", "这个", "那个", "这款", "那款"))
+        and isinstance(product_context, ProductFocus)
+        and product_context.is_valid()
+        and (product_context.result_ids or product_context.result_models)
+    ):
+        agent._state_pop(agent._pending_media_by_user, user_id)
     ordinal = ordinal_index(query)
     ordinal_selection = (
         agent._resolve_product_ordinal(user_id, ordinal[0], product_context)
@@ -678,6 +769,8 @@ def create_plan(
         query=query,
         active_session=active_session,
     )
+    plan = _apply_ordinal_media_context(plan, query=query, selected=ordinal_selection)
+    plan = _expand_compound_media_tasks(plan, query)
     plan = _apply_media_context(plan, agent=agent, user_id=user_id, query=query)
     plan = _apply_unified_query_plan(
         plan,
@@ -687,13 +780,25 @@ def create_plan(
         enabled=getattr(settings, "unified_query_plan_enabled", True),
     )
 
+    # The canonical boundary is the last deterministic step before routing to
+    # tools.  Keep the established TaskPlan for compatibility, but derive it
+    # from one auditable envelope so IntentDecision/ProductQuery/ProductFocus
+    # cannot silently disagree about references or media.
+    canonical = canonicalize_request(
+        query,
+        plan,
+        focus=product_context if isinstance(product_context, ProductFocus) else None,
+        request_id=state.get("request_id"),
+    )
+    plan = canonical.to_task_plan()
+
     intents = {task.decision.intent for task in plan.tasks}
     if not intents.intersection({Intent.PRODUCT, Intent.PRODUCT_MEDIA}) and intents.intersection(
         {Intent.POLICY, Intent.GENERAL, Intent.REPLY_SCRIPT}
     ):
         agent._clear_product_context(user_id)
     _prefetch_embedding(plan, query, runtime)
-    return {"plan": plan_to_payload(plan)}
+    return {"plan": plan_to_payload(plan), "canonical_request": canonical.to_dict()}
 
 
 def choose_after_plan(state: BusinessGraphState) -> PlanRoute:
@@ -953,6 +1058,11 @@ def finalize_reply(
         normalize_wecom_answer(base_reply.content), policy=OutputPolicy()
     )
     execution_trace = dict(base_reply.execution_trace or {})
+    canonical_payload = state.get("canonical_request")
+    if isinstance(canonical_payload, dict):
+        # This is the exact envelope used for routing, including unresolved
+        # references and media fan-out—not a reconstructed approximation.
+        execution_trace["canonical_request"] = canonical_payload
     execution_trace["output"] = {
         "character_limit": OutputPolicy().max_chars,
         "truncated": truncated,

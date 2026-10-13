@@ -11,6 +11,7 @@ from dataclasses import dataclass, replace
 from typing import Literal
 
 from app.business.product_focus import ProductFocus
+from app.business.reference_terms import REFERENCE_PRONOUN_SET
 from app.ontology.schema import (
     PRODUCT_FIELD_CATALOG as _ONTOLOGY_FIELD_CATALOG,
 )
@@ -338,7 +339,7 @@ def is_overview_request(message: str, references: tuple[ProductReference, ...]) 
     remainder = _normalized(message)
     for reference in references:
         remainder = remainder.replace(_normalized(reference.value), "")
-    remainder = remainder.strip("。！？!?，,：:")
+    remainder = remainder.strip("。！？!?，,、：:")
     return _OVERVIEW_FILLER_PATTERN.fullmatch(remainder) is not None
 
 
@@ -350,7 +351,7 @@ def is_overview_phrase(message: str) -> bool:
     the vocabulary shared with explicit-model overview detection while requiring
     a non-empty tail so a bare ordinal does not silently become full detail.
     """
-    remainder = _normalized(message).strip("。！？!?，,：:")
+    remainder = _normalized(message).strip("。！？!?，,、：:")
     return bool(remainder) and _OVERVIEW_FILLER_PATTERN.fullmatch(remainder) is not None
 
 
@@ -497,7 +498,10 @@ def _is_unscoped_product_overview(message: str) -> bool:
     return bool(
         re.fullmatch(
             r"(?:现在|当前|目前|我们(?:现在)?|你们(?:现在)?)?"
-            r"(?:有什么|有哪些|有哪几种|有哪几款)产品(?:呀|啊|呢|吗|嘛|吧)?",
+            r"(?:都|一共|总共)?"
+            r"(?:有什么|有哪些|有哪几种|有哪几款|有多少(?:种|款|个)?|"
+            r"有几种|有几款|有几个)"
+            r"(?:产品|型号|款|种|个)(?:呀|啊|呢|吗|嘛|吧)?",
             normalized,
         )
     )
@@ -509,6 +513,26 @@ def detect_product_operation(query: str) -> ProductOperation | None:
     返回 None 表示本函数不替调用方决定兜底操作，由调用方按清单规则与会话上下文决定。
     """
     normalized = _normalized(query)
+    # “有几种颜色/材质/档位” is a distinct-value aggregate, not an
+    # entity count.  Keep this check before the broad count patterns because
+    # both forms contain “几种”.  The field ontology is the source of truth;
+    # arbitrary words must not turn a request into an executable aggregate.
+    distinct_markers = r"(?:有多少种|多少种|有几种|几种|有多少类|多少类)"
+    if re.search(distinct_markers, normalized):
+        # Require the dimension label to be adjacent to the distinct-count
+        # phrase.  A price predicate such as “100 到 200 之间有多少产品” also
+        # contains an aggregatable price field, but it is an entity count and
+        # must remain ``count``.
+        for _field_name, definition in PRODUCT_FIELD_CATALOG.items():
+            if not definition.aggregatable:
+                continue
+            aliases = "|".join(re.escape(alias) for alias in definition.aliases)
+            if re.search(
+                rf"(?:{aliases}).{{0,6}}{distinct_markers}|"
+                rf"{distinct_markers}.{{0,6}}(?:{aliases})",
+                normalized,
+            ):
+                return "aggregate"
     for operation in _OPERATION_MATCH_ORDER:
         definition = PRODUCT_OPERATION_CATALOG[operation]
         if any(re.search(pattern, normalized) for pattern in definition.patterns):
@@ -567,8 +591,8 @@ def _preparse_text_filters(message: str) -> tuple[ProductFilter, ...]:
                 or value in aliases
                 or value
                 in {
-                    "什么", "哪些", "有", "的", "呢", "吗", "嘛", "吧", "它", "这", "那",
-                    "这个", "那个", "这款", "那款",
+                    "什么", "哪些", "有", "的", "呢", "吗", "嘛", "吧",
+                    *REFERENCE_PRONOUN_SET,
                 }
                 or any(
                     alias in value
@@ -604,7 +628,7 @@ def _preparse_text_filters(message: str) -> tuple[ProductFilter, ...]:
                 )
                 or re.search(r"什么|哪些|哪种|哪款", value)
                 or re.search(r"[A-Za-z]+\d", value)
-                or value in {"它", "这", "那", "这个", "那个", "这款", "那款", "呢", "吗", "嘛"}
+                or value in {*REFERENCE_PRONOUN_SET, "呢", "吗", "嘛"}
             ):
                 continue
             if field == "series" and any(
@@ -757,6 +781,24 @@ def preparse_product_query(message: str) -> ProductQuery:
             evidence="主体价" if re.search(r"主体价|主体价格", message) else "价格",
             source="fallback",
         )
+    if operation == "aggregate" and aggregate is None:
+        # Select the first explicitly named aggregatable field.  This is only
+        # a deterministic candidate; validate_product_query still checks
+        # evidence and permissions before execution.
+        aggregate_fields = [
+            (field_name, request)
+            for request in fallback_field_requests(message)
+            for field_name in (request.field,)
+            if PRODUCT_FIELD_CATALOG[field_name].aggregatable
+        ]
+        if aggregate_fields:
+            field_name, request = aggregate_fields[0]
+            aggregate = ProductAggregate(
+                kind="distinct_count",
+                field=field_name,
+                evidence=request.evidence,
+                source="fallback",
+            )
     if operation is None and filters:
         # A numeric/text predicate describes a candidate set.  Treat it as a
         # listing even when the employee says “发我…产品” instead of “有哪些”;
@@ -832,6 +874,24 @@ def validate_product_query(
     # Every explicit condition must survive model assembly; otherwise a model
     # that drops a price range could execute a broad query.
     preparse = preparse_product_query(message)
+    # A continuation like “的详细信息” intentionally asks for the trusted
+    # product overview.  The planner may still carry the previous turn's
+    # field list as context evidence; validating those fields one by one
+    # causes a false “另有字段未能可靠确认” warning even though the detail
+    # renderer is already authorized to emit the complete record.
+    contextual_overview = (
+        product_query.operation == "detail"
+        and product_query.context_mode == "continuation"
+        and is_overview_phrase(message)
+    )
+    if contextual_overview:
+        product_query = replace(
+            product_query,
+            requested_fields=(),
+            fields=(),
+            original_fields=(),
+            allow_overview=True,
+        )
     required_operation = product_query.required_operation or (
         preparse.required_operation
         if preparse.required_operation

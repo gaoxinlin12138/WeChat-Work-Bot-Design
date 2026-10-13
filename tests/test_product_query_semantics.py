@@ -5,10 +5,12 @@ from dataclasses import replace
 import pytest
 
 from app.business import pending
+from app.business.canonical import canonicalize_request
 from app.business.graph.builder import _product_context_decision
 from app.business.graph.state import plan_from_payload, plan_to_payload
 from app.business.intent import Intent, IntentDecision
-from app.business.planner import PlannedTask, TaskPlan, _ground_product_query
+from app.business.planner import PlannedTask, TaskPlan, _ground_product_query, plan_from_decision
+from app.business.product_focus import ProductFocus, focus_to_dict
 from app.business.product_outcome import product_outcome
 from app.business.product_query import (
     ProductFieldRequest,
@@ -16,6 +18,7 @@ from app.business.product_query import (
     ProductQuery,
     ProductReference,
     fallback_field_requests,
+    preparse_product_query,
     product_query_from_dict,
     product_query_to_dict,
     validate_product_query,
@@ -115,6 +118,60 @@ def test_planner_search_rewrite_cannot_replace_employee_message_for_evidence():
     # The graph now passes message as original_query and search rewrite separately.
     assert rewritten_search != message
     assert validate_product_query(query, message, can_view_cost=False).query.fields == ("material",)
+
+
+def test_contextual_full_detail_does_not_report_previous_fields_as_unconfirmed():
+    query = ProductQuery(
+        operation="detail",
+        references=(ProductReference("id:product-1", "context", "第三个", "context"),),
+        requested_fields=(
+            ProductFieldRequest("material", "详细信息", "context"),
+            ProductFieldRequest("components", "详细信息", "context"),
+        ),
+        original_fields=("material", "components"),
+        context_mode="continuation",
+    )
+
+    result = validate_product_query(query, "的详细信息", can_view_cost=False)
+
+    assert result.query.allow_overview is True
+    assert result.query.fields == ()
+    assert result.removed_fields == ()
+
+
+def test_he_pronoun_is_not_mistaken_for_a_material_filter() -> None:
+    parsed = preparse_product_query("他的材质是什么")
+
+    assert parsed.operation == "detail"
+    assert parsed.filters == ()
+    assert tuple(item.field for item in fallback_field_requests("他的材质是什么")) == ("material",)
+
+
+def test_he_pronoun_continuation_executes_against_the_trusted_product() -> None:
+    agent = BusinessAgent(Catalog())
+    focus = ProductFocus(
+        result_ids=("product-1",),
+        result_models=(MODEL,),
+        trusted_ids=("product-1",),
+        total=1,
+        expires_at=10**12,
+    )
+    agent._product_focus["employee-1"] = focus_to_dict(focus)
+    message = "他的材质是什么"
+    decision = IntentDecision(Intent.PRODUCT, 0.9, "continuation", message)
+    canonical = canonicalize_request(
+        message,
+        plan_from_decision(decision, message),
+        focus=focus,
+    )
+    query = canonical.tasks[0].product_query
+    assert query is not None
+    assert query.operation == "detail"
+    assert query.filters == ()
+    reply = answer(agent, message, query)
+
+    assert reply.content == "材质：ABS外壳铜水路"
+    assert reply.execution_trace["outcome"]["result_type"] == "fact"
 
 
 @pytest.mark.parametrize(

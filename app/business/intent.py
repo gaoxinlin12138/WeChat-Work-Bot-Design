@@ -578,6 +578,35 @@ def media_type_and_role(query: str) -> tuple[str | None, str | None]:
     return None, None
 
 
+def media_requests(query: str) -> tuple[tuple[str, str | None], ...]:
+    """Return every media kind explicitly requested in one message.
+
+    ``IntentDecision`` keeps the historical single-media fields for wire
+    compatibility.  The graph uses this helper to fan a compound request
+    such as ``图片和视频`` into two deterministic media tasks instead of
+    silently dropping one half of the request.
+    """
+    normalized = query.lower()
+    requests: list[tuple[str, str | None]] = []
+
+    if any(word in normalized for word in _CONFIGURATION_IMAGE_WORDS):
+        requests.append(("image", "configuration_image"))
+    if any(word in normalized for word in _GALLERY_IMAGE_WORDS):
+        requests.append(("image", "body_image"))
+    if any(word in normalized for word in _MAIN_IMAGE_WORDS):
+        requests.append(("image", "product_image"))
+    if any(word in normalized for word in _GENERIC_IMAGE_WORDS) and not any(
+        media_type == "image" and role is not None for media_type, role in requests
+    ):
+        requests.append(("image", None))
+    if any(word in normalized for word in _VIDEO_WORDS) or (
+        "播放" in normalized and "安装" in normalized
+    ):
+        requests.append(("video", "product_video"))
+
+    return tuple(dict.fromkeys(requests))
+
+
 def is_product_catalog_query(query: str) -> bool:
     """判断是否在盘点产品库，而不是查询某个产品的单一字段。"""
     normalized = query.lower().strip()
